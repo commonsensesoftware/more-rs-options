@@ -240,14 +240,14 @@ mod tests {
     }
 
     struct Foo {
-        monitor: Rc<dyn OptionsMonitor<Config>>,
+        monitor: Ref<dyn OptionsMonitor<Config>>,
         handler: Rc<dyn Fn(Option<&str>, &Config)>,
         state: Rc<OptionsState>,
         retries: RefCell<u8>,
     }
 
     impl Foo {
-        fn new(monitor: Rc<dyn OptionsMonitor<Config>>) -> Self {
+        fn new(monitor: Ref<dyn OptionsMonitor<Config>>) -> Self {
             let state = Rc::new(OptionsState::default());
             let other_state = state.clone();
             let instance = Self {
