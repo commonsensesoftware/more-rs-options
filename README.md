@@ -17,6 +17,7 @@ This crate provides the following features:
 - _Default_ - Abstractions for the options
 - **di** - Provides dependency injection extensions
 - **cfg** - Provides dependency injection extensions to bind configurations to options
+- **async** - Provides features for using options in an asynchronous context
 
 -----
 
@@ -85,7 +86,7 @@ impl<'a> TestModel<'a> {
 }
 ```
 
-`ConfigurationBinder.get_as<T>` binds and returns the specified type. `ConfigurationBinder.get_as<T>` may be more convenient than using `ConfigurationBinder.bind`. The following code shows how to use `ConfigurationBinder.get_as<T>` with the PositionOptions struct:
+`ConfigurationBinder.reify<T>` binds and returns the specified type. `ConfigurationBinder.reify<T>` may be more convenient than using `ConfigurationBinder.bind`. The following code shows how to use `ConfigurationBinder.reify<T>` with the PositionOptions struct:
 
 ```rust
 pub TestModel<'a> {
@@ -98,7 +99,7 @@ impl<'a> TestModel<'a> {
     }
 
     pub get(&self) -> String {
-        let options = self.config.section("Position").get_as::<PositionOptions>();
+        let options: PositionOptions = self.config.section("Position").reify();
         format!("Title: {}\nName: {}", options.title, options.name)
     }
 }
@@ -126,12 +127,12 @@ impl TestModel {
 }
 
 fn main() {
-    let path = PathBuf::from(r"./appsettings.json");
+    let path = PathBuf::from("./appsettings.json");
     let config = Rc::from(
         DefaultConfigurationBuilder::new()
             .add_json_file(&path)
             .build()
-            .to_config(),
+            .as_config(),
     );
     let provider = ServiceCollection::new()
         .add(transient_as_self::<TestModel>())
@@ -207,12 +208,12 @@ impl TestSnapModel {
 }
 
 fn main() {
-    let path = PathBuf::from(r"./appsettings.json");
+    let path = PathBuf::from("./appsettings.json");
     let config = Rc::from(
         DefaultConfigurationBuilder::new()
             .add_json_file(&path)
             .build()
-            .to_config(),
+            .as_config(),
     );
     let provider = ServiceCollection::new()
         .add(transient_as_self::<TestSnapModel>())
@@ -245,12 +246,12 @@ impl TestMonitorModel {
 }
 
 fn main() {
-    let path = PathBuf::from(r"./appsettings.json");
+    let path = PathBuf::from("./appsettings.json");
     let config = Rc::from(
         DefaultConfigurationBuilder::new()
             .add_json_file(&path)
             .build()
-            .to_config(),
+            .as_config(),
     );
     let provider = ServiceCollection::new()
         .add(transient_as_self::<TestMonitorModel>())
@@ -335,12 +336,12 @@ The following code:
 
 ```rust
 fn main() {
-    let path = PathBuf::from(r"./appsettings.json");
+    let path = PathBuf::from("./appsettings.json");
     let config = Rc::from(
         DefaultConfigurationBuilder::new()
             .add_json_file(&path)
             .build()
-            .to_config(),
+            .as_config(),
     );
     let provider = ServiceCollection::new()
         .apply_config_at::<MyConfigOptions>(config, "MyConfig")
@@ -391,12 +392,12 @@ Using the preceding code, validation is enabled with the following code:
 
 ```rust
 fn main() {
-    let path = PathBuf::from(r"./appsettings.json");
+    let path = PathBuf::from("./appsettings.json");
     let config = Rc::from(
         DefaultConfigurationBuilder::new()
             .add_json_file(&path)
             .build()
-            .to_config(),
+            .as_config(),
     );
     let provider = ServiceCollection::new()
         .apply_config_at::<MyOptions>(config, "MyOptions")
