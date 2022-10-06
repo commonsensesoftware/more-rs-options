@@ -124,7 +124,7 @@ mod tests {
                         .collect(),
                 )
                 .build()
-                .to_config(),
+                .as_config(),
         );
         let provider = ServiceCollection::new()
             .apply_config::<TestOptions>(config)
@@ -149,7 +149,7 @@ mod tests {
                         .collect(),
                 )
                 .build()
-                .to_config(),
+                .as_config(),
         );
         let provider = ServiceCollection::new()
             .apply_config_at::<TestOptions>(config, "Test")
