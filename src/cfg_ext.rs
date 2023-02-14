@@ -128,7 +128,8 @@ mod tests {
         );
         let provider = ServiceCollection::new()
             .apply_config::<TestOptions>(config)
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -153,7 +154,8 @@ mod tests {
         );
         let provider = ServiceCollection::new()
             .apply_config_at::<TestOptions>(config, "Test")
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn OptionsSnapshot<TestOptions>>();

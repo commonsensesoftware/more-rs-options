@@ -263,7 +263,8 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let result = provider.get::<dyn Options<TestOptions>>();
@@ -277,7 +278,8 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .configure_options(|o: &mut TestOptions| o.setting = 1)
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -291,7 +293,8 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .post_configure_options(|o: &mut TestOptions| o.setting = 1)
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -307,7 +310,8 @@ mod tests {
             .configure_options(|o: &mut TestOptions| o.setting = 1)
             .configure_options(|o: &mut TestOptions| o.enabled = true)
             .post_configure_options(|o: &mut TestOptions| o.setting = 2)
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let result = provider.get_required::<dyn Options<TestOptions>>();
@@ -330,7 +334,8 @@ mod tests {
                 transient::<dyn ValidateOptions<TestOptions>, TestValidation>()
                     .from(|_| ServiceRef::new(TestValidation::default())),
             )
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -352,7 +357,8 @@ mod tests {
                 transient::<dyn ValidateOptions<TestOptions>, TestValidation>()
                     .from(|_| ServiceRef::new(TestValidation::default())),
             )
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -368,7 +374,8 @@ mod tests {
             .add_options::<TestOptions>()
             .configure1(|o, d1: ServiceRef<TestService>| o.setting = d1.next())
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -388,7 +395,8 @@ mod tests {
                 },
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -411,7 +419,8 @@ mod tests {
                 },
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -435,7 +444,8 @@ mod tests {
                 },
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -460,7 +470,8 @@ mod tests {
                 },
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -476,7 +487,8 @@ mod tests {
             .add_options::<TestOptions>()
             .post_configure1(|o, d1: ServiceRef<TestService>| o.setting = d1.next())
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -496,7 +508,8 @@ mod tests {
                 },
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -519,7 +532,8 @@ mod tests {
                 },
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -543,7 +557,8 @@ mod tests {
                 },
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -568,7 +583,8 @@ mod tests {
                 },
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -591,7 +607,8 @@ mod tests {
                 "Not enabled!",
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -616,7 +633,8 @@ mod tests {
                 "Not enabled!",
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -644,7 +662,8 @@ mod tests {
                 "Not enabled!",
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -673,7 +692,8 @@ mod tests {
                 "Not enabled!",
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();
@@ -703,7 +723,8 @@ mod tests {
                 "Not enabled!",
             )
             .add(existing_as_self(TestService::default()))
-            .build_provider();
+            .build_provider()
+            .unwrap();
 
         // act
         let options = provider.get_required::<dyn Options<TestOptions>>();

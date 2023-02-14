@@ -1,6 +1,6 @@
 [package]
 name = "more-options"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2018"
 authors = ["Chris Martinez <chris_martinez_77@hotmail.com>"]
 description = "Provides support for options"
@@ -22,7 +22,7 @@ async = ["more-di/async"]
 
 [dependencies]
 more-changetoken = "1.0"
-more-di = { version = "1.0", optional = true, features = ["builder"] }
+more-di = { version = "2.1", optional = true, features = ["builder"] }
 serde = { version = "1.0", optional = true }
 
 [dependencies.more-config]
@@ -33,7 +33,7 @@ optional = true
 
 [dev-dependencies]
 more-config = { version = "1.0", features = ["mem", "binder"] }
-more-di = { version = "1.0", features = ["builder"] }
+more-di = { version = "2.0", features = ["builder"] }
 more-options = { path = ".", features = ["cfg"] }
 serde = { version = "1.0", features = ["derive"] }
 test-case = "2.2.1"
