@@ -137,7 +137,8 @@ fn main() {
     let provider = ServiceCollection::new()
         .add(transient_as_self::<TestModel>())
         .apply_config::<PositionOptions>(config)
-        .build_provider();
+        .build_provider()
+        .unwrap();
     let model = provider.get_required::<TestModel>();
 
     println!("{}", model.get())
@@ -171,7 +172,7 @@ options after all `ConfigureOptions<TOptions>` configuration occurs.
 and `PostConfigureOptions<TOptions>` and runs all the configurations first, followed by the
 post-configuration.
 
-`OptionsMonitorCache<TOptions>` is used by `OptionsMonitor<TOptions>`to cache `TOptions` instances.
+`OptionsMonitorCache<TOptions>` is used by `OptionsMonitor<TOptions>` to cache `TOptions` instances.
 The `OptionsMonitorCache<TOptions>` invalidates options instances in the monitor so that the value
 is recomputed (`try_remove`). Values can be manually introduced with `try_add`. The `clear` method
 is used when all named instances should be recreated on demand.
@@ -218,7 +219,8 @@ fn main() {
     let provider = ServiceCollection::new()
         .add(transient_as_self::<TestSnapModel>())
         .apply_config_at::<MyOptions>(config, "MyOptions")
-        .build_provider();
+        .build_provider()
+        .unwrap();
     let model = provider.get_required::<TestSnapModel>();
 
     println!("{}", model.get())
@@ -256,7 +258,8 @@ fn main() {
     let provider = ServiceCollection::new()
         .add(transient_as_self::<TestMonitorModel>())
         .apply_config_at::<MyOptions>(config, "MyOptions")
-        .build_provider();
+        .build_provider()
+        .unwrap();
     let model = provider.get_required::<TestMonitorModel>();
 
     println!("{}", model.get())
@@ -348,7 +351,8 @@ fn main() {
         .validate(
             |options| options.key2 == 0 || options.key3 > options.key2,
             "Key3 must be > than Key2.")
-        .build_provider();
+        .build_provider()
+        .unwrap();
 }
 ```
 
@@ -404,7 +408,8 @@ fn main() {
         .add(
             transient::<dyn ValidateOptions<MyConfigOptions>, MyConfigValidation>()
             .from(|_| Rc::new(MyConfigValidation::default())))
-        .build_provider();
+        .build_provider()
+        .unwrap();
     let options = provider.get_required::<MyConfigOptions>();
 }
 ```
@@ -418,7 +423,8 @@ runs after all `ConfigureOptions<TOptions>` configuration occurs:
 fn main() {
     let provider = ServiceCollection::new()
         .post_configure_options::<TestOptions>(|options| options.enabled = true)
-        .build_provider();
+        .build_provider()
+        .unwrap();
 }
 ```
 
