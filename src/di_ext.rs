@@ -92,28 +92,38 @@ fn _add_options<'a, T>(
     descriptor: ServiceDescriptor,
 ) -> OptionsBuilder<'a, T> {
     services
-        .try_add(singleton_as_self::<OptionsManager<T>>().from(|sp| {
-            ServiceRef::new(OptionsManager::new(
-                sp.get_required::<dyn OptionsFactory<T>>(),
-            ))
-        }))
+        .try_add(
+            singleton_as_self::<OptionsManager<T>>()
+                .depends_on(exactly_one::<dyn OptionsFactory<T>>())
+                .from(|sp| {
+                    ServiceRef::new(OptionsManager::new(
+                        sp.get_required::<dyn OptionsFactory<T>>(),
+                    ))
+                }),
+        )
         .try_add(
             singleton::<dyn Options<T>, OptionsManager<T>>()
+                .depends_on(exactly_one::<OptionsManager<T>>())
                 .from(|sp| sp.get_required::<OptionsManager<T>>()),
         )
         .try_add(
             scoped::<dyn OptionsSnapshot<T>, OptionsManager<T>>()
+                .depends_on(exactly_one::<OptionsManager<T>>())
                 .from(|sp| sp.get_required::<OptionsManager<T>>()),
         )
-        .try_add(singleton_factory(|sp| {
-            let monitor: ServiceRef<dyn OptionsMonitor<T>> =
-                ServiceRef::new(DefaultOptionsMonitor::new(
-                    sp.get_required::<dyn OptionsMonitorCache<T>>(),
-                    sp.get_all::<dyn OptionsChangeTokenSource<T>>().collect(),
-                    sp.get_required::<dyn OptionsFactory<T>>(),
-                ));
-            monitor
-        }))
+        .try_add(
+            singleton::<dyn OptionsMonitor<T>, DefaultOptionsMonitor<T>>()
+                .depends_on(exactly_one::<dyn OptionsMonitorCache<T>>())
+                .depends_on(zero_or_more::<dyn OptionsChangeTokenSource<T>>())
+                .depends_on(exactly_one::<dyn OptionsFactory<T>>())
+                .from(|sp| {
+                    ServiceRef::new(DefaultOptionsMonitor::new(
+                        sp.get_required::<dyn OptionsMonitorCache<T>>(),
+                        sp.get_all::<dyn OptionsChangeTokenSource<T>>().collect(),
+                        sp.get_required::<dyn OptionsFactory<T>>(),
+                    ))
+                }),
+        )
         .try_add(descriptor)
         .try_add(
             singleton::<dyn OptionsMonitorCache<T>, OptionsCache<T>>()
@@ -125,15 +135,17 @@ fn _add_options<'a, T>(
 
 impl OptionsServiceExtensions for ServiceCollection {
     fn add_options<T: Default + 'static>(&mut self) -> OptionsBuilder<T> {
-        let descriptor = transient_factory(|sp| {
-            let factory: ServiceRef<dyn OptionsFactory<T>> =
+        let descriptor = transient::<dyn OptionsFactory<T>, DefaultOptionsFactory<T>>()
+            .depends_on(zero_or_more::<dyn ConfigureOptions<T>>())
+            .depends_on(zero_or_more::<dyn PostConfigureOptions<T>>())
+            .depends_on(zero_or_more::<dyn ValidateOptions<T>>())
+            .from(|sp| {
                 ServiceRef::new(DefaultOptionsFactory::new(
                     sp.get_all::<dyn ConfigureOptions<T>>().collect(),
                     sp.get_all::<dyn PostConfigureOptions<T>>().collect(),
                     sp.get_all::<dyn ValidateOptions<T>>().collect(),
-                ));
-            factory
-        });
+                ))
+            });
 
         _add_options(self, None, descriptor)
     }
@@ -142,15 +154,17 @@ impl OptionsServiceExtensions for ServiceCollection {
         &mut self,
         name: impl AsRef<str>,
     ) -> OptionsBuilder<T> {
-        let descriptor = transient_factory(|sp| {
-            let factory: ServiceRef<dyn OptionsFactory<T>> =
+        let descriptor = transient::<dyn OptionsFactory<T>, DefaultOptionsFactory<T>>()
+            .depends_on(zero_or_more::<dyn ConfigureOptions<T>>())
+            .depends_on(zero_or_more::<dyn PostConfigureOptions<T>>())
+            .depends_on(zero_or_more::<dyn ValidateOptions<T>>())
+            .from(|sp| {
                 ServiceRef::new(DefaultOptionsFactory::new(
                     sp.get_all::<dyn ConfigureOptions<T>>().collect(),
                     sp.get_all::<dyn PostConfigureOptions<T>>().collect(),
                     sp.get_all::<dyn ValidateOptions<T>>().collect(),
-                ));
-            factory
-        });
+                ))
+            });
 
         _add_options(self, Some(name.as_ref()), descriptor)
     }
