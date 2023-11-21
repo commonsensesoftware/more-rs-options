@@ -1,4 +1,4 @@
-use std::cell::UnsafeCell;
+use crate::Ref;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -10,7 +10,7 @@ pub trait OptionsMonitorCache<T> {
     ///
     /// * `name` - The optional name of the options
     /// * `create_options` - The function used to create options when added
-    fn get_or_add(&self, name: Option<&str>, create_options: &dyn Fn(Option<&str>) -> T) -> &T;
+    fn get_or_add(&self, name: Option<&str>, create_options: &dyn Fn(Option<&str>) -> T) -> Ref<T>;
 
     /// Attempts to add options with the specified name.
     ///
@@ -33,64 +33,46 @@ pub trait OptionsMonitorCache<T> {
 
 /// Represents a cache for configured options.
 pub struct OptionsCache<T> {
-    // this is to support 'get_or_add' without requiring a mutable reference.
-    // '&mut' is too restrictive and RefCell won't help here because we need
-    // a borrowed reference at the end
-    sync: Mutex<String>,
-    cache: UnsafeCell<HashMap<String, T>>,
+    cache: Mutex<HashMap<String, Ref<T>>>,
 }
 
 impl<T> Default for OptionsCache<T> {
     fn default() -> Self {
         Self {
-            sync: Default::default(),
             cache: Default::default(),
         }
     }
 }
 
 impl<T> OptionsMonitorCache<T> for OptionsCache<T> {
-    fn get_or_add(&self, name: Option<&str>, create_options: &dyn Fn(Option<&str>) -> T) -> &T {
+    fn get_or_add(&self, name: Option<&str>, create_options: &dyn Fn(Option<&str>) -> T) -> Ref<T> {
         let key = name.unwrap_or_default().to_string();
-        let _lock = self.sync.lock().unwrap();
-
-        unsafe {
-            let cache: &mut HashMap<String, T> = &mut *self.cache.get();
-            cache.entry(key).or_insert_with(|| create_options(name))
-        }
+        self.cache
+            .lock()
+            .unwrap()
+            .entry(key)
+            .or_insert_with(|| Ref::new(create_options(name)))
+            .clone()
     }
 
     fn try_add(&self, name: Option<&str>, options: T) -> bool {
         let key = name.unwrap_or_default();
-        let _lock = self.sync.lock().unwrap();
+        let mut cache = self.cache.lock().unwrap();
 
-        unsafe {
-            let cache: &mut HashMap<String, T> = &mut *self.cache.get();
-
-            if cache.contains_key(key) {
-                false
-            } else {
-                cache.insert(key.to_owned(), options);
-                true
-            }
+        if cache.contains_key(key) {
+            false
+        } else {
+            cache.insert(key.to_owned(), Ref::new(options));
+            true
         }
     }
 
     fn try_remove(&self, name: Option<&str>) -> bool {
         let key = name.unwrap_or_default();
-        let _lock = self.sync.lock().unwrap();
-
-        unsafe {
-            let cache: &mut HashMap<String, T> = &mut *self.cache.get();
-            cache.remove(key).is_some()
-        }
+        self.cache.lock().unwrap().remove(key).is_some()
     }
 
     fn clear(&self) {
-        let _lock = self.sync.lock().unwrap();
-        unsafe {
-            let cache: &mut HashMap<String, T> = &mut *self.cache.get();
-            cache.clear();
-        }
+        self.cache.lock().unwrap().clear()
     }
 }
