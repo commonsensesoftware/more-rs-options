@@ -1,7 +1,7 @@
 use crate::{ext::*, *};
 use config::ext::*;
 use config::Configuration;
-use di::{existing, ServiceCollection, ServiceRef};
+use di::{existing, Ref, ServiceCollection};
 use serde::de::DeserializeOwned;
 use std::marker::PhantomData;
 use tokens::ChangeToken;
@@ -9,7 +9,7 @@ use tokens::ChangeToken;
 /// Represents a change token for monitored options that are notified when configuration changes.
 pub struct ConfigurationChangeTokenSource<TOptions> {
     name: Option<String>,
-    configuration: ServiceRef<dyn Configuration>,
+    configuration: Ref<dyn Configuration>,
     _data: PhantomData<TOptions>,
 }
 
@@ -20,7 +20,7 @@ impl<TOptions> ConfigurationChangeTokenSource<TOptions> {
     ///
     /// * `name` - The optional name of the options being watched
     /// * `configuration` - The source configuration
-    pub fn new(name: Option<&str>, configuration: ServiceRef<dyn Configuration>) -> Self {
+    pub fn new(name: Option<&str>, configuration: Ref<dyn Configuration>) -> Self {
         Self {
             name: name.map(|s| s.to_owned()),
             configuration,
@@ -42,17 +42,14 @@ impl<TOptions> OptionsChangeTokenSource<TOptions> for ConfigurationChangeTokenSo
 /// Defines extension methods for the `ServiceCollection` struct.
 pub trait OptionsConfigurationServiceExtensions {
     /// Registers an options type that will have all of its associated services registered.
-    fn apply_config<T>(
-        &mut self,
-        configuration: ServiceRef<dyn Configuration>,
-    ) -> OptionsBuilder<T>
+    fn apply_config<T>(&mut self, configuration: Ref<dyn Configuration>) -> OptionsBuilder<T>
     where
         T: Default + DeserializeOwned + 'static;
 
     /// Registers an options type that will have all of its associated services registered.
     fn apply_config_at<T>(
         &mut self,
-        configuration: ServiceRef<dyn Configuration>,
+        configuration: Ref<dyn Configuration>,
         key: impl AsRef<str>,
     ) -> OptionsBuilder<T>
     where
@@ -60,7 +57,7 @@ pub trait OptionsConfigurationServiceExtensions {
 }
 
 impl OptionsConfigurationServiceExtensions for ServiceCollection {
-    fn apply_config<T>(&mut self, configuration: ServiceRef<dyn Configuration>) -> OptionsBuilder<T>
+    fn apply_config<T>(&mut self, configuration: Ref<dyn Configuration>) -> OptionsBuilder<T>
     where
         T: Default + DeserializeOwned + 'static,
     {
@@ -78,7 +75,7 @@ impl OptionsConfigurationServiceExtensions for ServiceCollection {
 
     fn apply_config_at<T>(
         &mut self,
-        configuration: ServiceRef<dyn Configuration>,
+        configuration: Ref<dyn Configuration>,
         key: impl AsRef<str>,
     ) -> OptionsBuilder<T>
     where

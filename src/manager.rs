@@ -21,13 +21,14 @@ impl<T> OptionsManager<T> {
 }
 
 impl<T> Options<T> for OptionsManager<T> {
-    fn value(&self) -> &T {
+    fn value(&self) -> Ref<T> {
         self.get(None)
     }
 }
 
 impl<T> OptionsSnapshot<T> for OptionsManager<T> {
-    fn get(&self, name: Option<&str>) -> &T {
-        self.cache.get_or_add(name, &|n| self.factory.create(n).unwrap())
+    fn get(&self, name: Option<&str>) -> Ref<T> {
+        self.cache
+            .get_or_add(name, &|n| self.factory.create(n).unwrap())
     }
 }

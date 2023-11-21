@@ -1,10 +1,13 @@
 #![doc = include_str!("../README.md")]
 
-#[cfg(not(feature = "di"))]
-pub(crate) type Ref<T> = std::rc::Rc<T>;
+#[cfg(not(all(feature = "di", feature = "async")))]
+pub type Ref<T> = std::rc::Rc<T>;
 
-#[cfg(feature = "di")]
-pub(crate) type Ref<T> = di::ServiceRef<T>;
+#[cfg(all(not(feature = "di"), feature = "async"))]
+pub type Ref<T> = std::sync::Arc<T>;
+
+#[cfg(all(feature = "di", feature = "async"))]
+pub type Ref<T> = di::Ref<T>;
 
 mod cache;
 mod configure;

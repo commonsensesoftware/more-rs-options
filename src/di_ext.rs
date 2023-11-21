@@ -1,5 +1,8 @@
 use crate::*;
-use di::*;
+use di::{
+    exactly_one, scoped, singleton, singleton_as_self, transient, transient_factory, zero_or_more,
+    ServiceCollection, ServiceDescriptor, ServiceProvider,
+};
 
 /// Defines extension methods for the `ServiceCollection` struct.
 pub trait OptionsServiceExtensions {
@@ -23,7 +26,7 @@ pub trait OptionsServiceExtensions {
     /// * `factory` - the function used to create the associated options factory
     fn add_options_with<T, F>(&mut self, factory: F) -> OptionsBuilder<T>
     where
-        F: Fn(&ServiceProvider) -> ServiceRef<dyn OptionsFactory<T>> + 'static;
+        F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + 'static;
 
     /// Registers an options type that will have all of its associated services registered.
     ///
@@ -37,7 +40,7 @@ pub trait OptionsServiceExtensions {
         factory: F,
     ) -> OptionsBuilder<T>
     where
-        F: Fn(&ServiceProvider) -> ServiceRef<dyn OptionsFactory<T>> + 'static;
+        F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + 'static;
 
     /// Registers an action used to initialize a particular type of configuration options.
     ///
@@ -96,7 +99,7 @@ fn _add_options<'a, T>(
             singleton_as_self::<OptionsManager<T>>()
                 .depends_on(exactly_one::<dyn OptionsFactory<T>>())
                 .from(|sp| {
-                    ServiceRef::new(OptionsManager::new(
+                    Ref::new(OptionsManager::new(
                         sp.get_required::<dyn OptionsFactory<T>>(),
                     ))
                 }),
@@ -117,7 +120,7 @@ fn _add_options<'a, T>(
                 .depends_on(zero_or_more::<dyn OptionsChangeTokenSource<T>>())
                 .depends_on(exactly_one::<dyn OptionsFactory<T>>())
                 .from(|sp| {
-                    ServiceRef::new(DefaultOptionsMonitor::new(
+                    Ref::new(DefaultOptionsMonitor::new(
                         sp.get_required::<dyn OptionsMonitorCache<T>>(),
                         sp.get_all::<dyn OptionsChangeTokenSource<T>>().collect(),
                         sp.get_required::<dyn OptionsFactory<T>>(),
@@ -127,7 +130,7 @@ fn _add_options<'a, T>(
         .try_add(descriptor)
         .try_add(
             singleton::<dyn OptionsMonitorCache<T>, OptionsCache<T>>()
-                .from(|_| ServiceRef::new(OptionsCache::default())),
+                .from(|_| Ref::new(OptionsCache::default())),
         );
 
     OptionsBuilder::new(services, name)
@@ -140,7 +143,7 @@ impl OptionsServiceExtensions for ServiceCollection {
             .depends_on(zero_or_more::<dyn PostConfigureOptions<T>>())
             .depends_on(zero_or_more::<dyn ValidateOptions<T>>())
             .from(|sp| {
-                ServiceRef::new(DefaultOptionsFactory::new(
+                Ref::new(DefaultOptionsFactory::new(
                     sp.get_all::<dyn ConfigureOptions<T>>().collect(),
                     sp.get_all::<dyn PostConfigureOptions<T>>().collect(),
                     sp.get_all::<dyn ValidateOptions<T>>().collect(),
@@ -159,7 +162,7 @@ impl OptionsServiceExtensions for ServiceCollection {
             .depends_on(zero_or_more::<dyn PostConfigureOptions<T>>())
             .depends_on(zero_or_more::<dyn ValidateOptions<T>>())
             .from(|sp| {
-                ServiceRef::new(DefaultOptionsFactory::new(
+                Ref::new(DefaultOptionsFactory::new(
                     sp.get_all::<dyn ConfigureOptions<T>>().collect(),
                     sp.get_all::<dyn PostConfigureOptions<T>>().collect(),
                     sp.get_all::<dyn ValidateOptions<T>>().collect(),
@@ -171,7 +174,7 @@ impl OptionsServiceExtensions for ServiceCollection {
 
     fn add_options_with<T, F>(&mut self, factory: F) -> OptionsBuilder<T>
     where
-        F: Fn(&ServiceProvider) -> ServiceRef<dyn OptionsFactory<T>> + 'static,
+        F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + 'static,
     {
         _add_options(self, None, transient_factory(factory))
     }
@@ -182,7 +185,7 @@ impl OptionsServiceExtensions for ServiceCollection {
         factory: F,
     ) -> OptionsBuilder<T>
     where
-        F: Fn(&ServiceProvider) -> ServiceRef<dyn OptionsFactory<T>> + 'static,
+        F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + 'static,
     {
         _add_options(self, Some(name.as_ref()), transient_factory(factory))
     }
@@ -346,7 +349,7 @@ mod tests {
             })
             .add(
                 transient::<dyn ValidateOptions<TestOptions>, TestValidation>()
-                    .from(|_| ServiceRef::new(TestValidation::default())),
+                    .from(|_| Ref::new(TestValidation::default())),
             )
             .build_provider()
             .unwrap();
@@ -369,7 +372,7 @@ mod tests {
             })
             .add(
                 transient::<dyn ValidateOptions<TestOptions>, TestValidation>()
-                    .from(|_| ServiceRef::new(TestValidation::default())),
+                    .from(|_| Ref::new(TestValidation::default())),
             )
             .build_provider()
             .unwrap();
@@ -386,7 +389,7 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
-            .configure1(|o, d1: ServiceRef<TestService>| o.setting = d1.next())
+            .configure1(|o, d1: Ref<TestService>| o.setting = d1.next())
             .add(existing_as_self(TestService::default()))
             .build_provider()
             .unwrap();
@@ -403,11 +406,9 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
-            .configure2(
-                |o, d1: ServiceRef<TestService>, d2: ServiceRef<TestService>| {
-                    o.setting = d1.next() + d2.next()
-                },
-            )
+            .configure2(|o, d1: Ref<TestService>, d2: Ref<TestService>| {
+                o.setting = d1.next() + d2.next()
+            })
             .add(existing_as_self(TestService::default()))
             .build_provider()
             .unwrap();
@@ -425,10 +426,7 @@ mod tests {
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
             .configure3(
-                |o,
-                 d1: ServiceRef<TestService>,
-                 d2: ServiceRef<TestService>,
-                 d3: ServiceRef<TestService>| {
+                |o, d1: Ref<TestService>, d2: Ref<TestService>, d3: Ref<TestService>| {
                     o.setting = d1.next() + d2.next() + d3.next()
                 },
             )
@@ -450,10 +448,10 @@ mod tests {
             .add_options::<TestOptions>()
             .configure4(
                 |o,
-                 d1: ServiceRef<TestService>,
-                 d2: ServiceRef<TestService>,
-                 d3: ServiceRef<TestService>,
-                 d4: ServiceRef<TestService>| {
+                 d1: Ref<TestService>,
+                 d2: Ref<TestService>,
+                 d3: Ref<TestService>,
+                 d4: Ref<TestService>| {
                     o.setting = d1.next() + d2.next() + d3.next() + d4.next()
                 },
             )
@@ -475,11 +473,11 @@ mod tests {
             .add_options::<TestOptions>()
             .configure5(
                 |o,
-                 d1: ServiceRef<TestService>,
-                 d2: ServiceRef<TestService>,
-                 d3: ServiceRef<TestService>,
-                 d4: ServiceRef<TestService>,
-                 d5: ServiceRef<TestService>| {
+                 d1: Ref<TestService>,
+                 d2: Ref<TestService>,
+                 d3: Ref<TestService>,
+                 d4: Ref<TestService>,
+                 d5: Ref<TestService>| {
                     o.setting = d1.next() + d2.next() + d3.next() + d4.next() + d5.next()
                 },
             )
@@ -499,7 +497,7 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
-            .post_configure1(|o, d1: ServiceRef<TestService>| o.setting = d1.next())
+            .post_configure1(|o, d1: Ref<TestService>| o.setting = d1.next())
             .add(existing_as_self(TestService::default()))
             .build_provider()
             .unwrap();
@@ -516,11 +514,9 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
-            .post_configure2(
-                |o, d1: ServiceRef<TestService>, d2: ServiceRef<TestService>| {
-                    o.setting = d1.next() + d2.next()
-                },
-            )
+            .post_configure2(|o, d1: Ref<TestService>, d2: Ref<TestService>| {
+                o.setting = d1.next() + d2.next()
+            })
             .add(existing_as_self(TestService::default()))
             .build_provider()
             .unwrap();
@@ -538,10 +534,7 @@ mod tests {
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
             .post_configure3(
-                |o,
-                 d1: ServiceRef<TestService>,
-                 d2: ServiceRef<TestService>,
-                 d3: ServiceRef<TestService>| {
+                |o, d1: Ref<TestService>, d2: Ref<TestService>, d3: Ref<TestService>| {
                     o.setting = d1.next() + d2.next() + d3.next()
                 },
             )
@@ -563,10 +556,10 @@ mod tests {
             .add_options::<TestOptions>()
             .post_configure4(
                 |o,
-                 d1: ServiceRef<TestService>,
-                 d2: ServiceRef<TestService>,
-                 d3: ServiceRef<TestService>,
-                 d4: ServiceRef<TestService>| {
+                 d1: Ref<TestService>,
+                 d2: Ref<TestService>,
+                 d3: Ref<TestService>,
+                 d4: Ref<TestService>| {
                     o.setting = d1.next() + d2.next() + d3.next() + d4.next()
                 },
             )
@@ -588,11 +581,11 @@ mod tests {
             .add_options::<TestOptions>()
             .post_configure5(
                 |o,
-                 d1: ServiceRef<TestService>,
-                 d2: ServiceRef<TestService>,
-                 d3: ServiceRef<TestService>,
-                 d4: ServiceRef<TestService>,
-                 d5: ServiceRef<TestService>| {
+                 d1: Ref<TestService>,
+                 d2: Ref<TestService>,
+                 d3: Ref<TestService>,
+                 d4: Ref<TestService>,
+                 d5: Ref<TestService>| {
                     o.setting = d1.next() + d2.next() + d3.next() + d4.next() + d5.next()
                 },
             )
@@ -614,7 +607,7 @@ mod tests {
             .add_options::<TestOptions>()
             .configure(|o| o.enabled = true)
             .validate1(
-                |o, d1: ServiceRef<TestService>| {
+                |o, d1: Ref<TestService>| {
                     let _ = d1.next();
                     o.enabled
                 },
@@ -640,7 +633,7 @@ mod tests {
             .add_options::<TestOptions>()
             .configure(|o| o.enabled = true)
             .validate2(
-                |o, d1: ServiceRef<TestService>, d2: ServiceRef<TestService>| {
+                |o, d1: Ref<TestService>, d2: Ref<TestService>| {
                     let _ = d1.next() + d2.next();
                     o.enabled
                 },
@@ -666,10 +659,7 @@ mod tests {
             .add_options::<TestOptions>()
             .configure(|o| o.enabled = true)
             .validate3(
-                |o,
-                 d1: ServiceRef<TestService>,
-                 d2: ServiceRef<TestService>,
-                 d3: ServiceRef<TestService>| {
+                |o, d1: Ref<TestService>, d2: Ref<TestService>, d3: Ref<TestService>| {
                     let _ = d1.next() + d2.next() + d3.next();
                     o.enabled
                 },
@@ -696,10 +686,10 @@ mod tests {
             .configure(|o| o.enabled = true)
             .validate4(
                 |o,
-                 d1: ServiceRef<TestService>,
-                 d2: ServiceRef<TestService>,
-                 d3: ServiceRef<TestService>,
-                 d4: ServiceRef<TestService>| {
+                 d1: Ref<TestService>,
+                 d2: Ref<TestService>,
+                 d3: Ref<TestService>,
+                 d4: Ref<TestService>| {
                     let _ = d1.next() + d2.next() + d3.next() + d4.next();
                     o.enabled
                 },
@@ -726,11 +716,11 @@ mod tests {
             .configure(|o| o.enabled = true)
             .validate5(
                 |o,
-                 d1: ServiceRef<TestService>,
-                 d2: ServiceRef<TestService>,
-                 d3: ServiceRef<TestService>,
-                 d4: ServiceRef<TestService>,
-                 d5: ServiceRef<TestService>| {
+                 d1: Ref<TestService>,
+                 d2: Ref<TestService>,
+                 d3: Ref<TestService>,
+                 d4: Ref<TestService>,
+                 d5: Ref<TestService>| {
                     let _ = d1.next() + d2.next() + d3.next() + d4.next() + d5.next();
                     o.enabled
                 },
