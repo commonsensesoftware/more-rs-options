@@ -102,6 +102,12 @@ mod tests {
     use config::{ConfigurationBuilder, DefaultConfigurationBuilder};
     use di::ServiceCollection;
     use serde::Deserialize;
+    use serde_json::json;
+    use std::env::temp_dir;
+    use std::fs::{remove_file, File};
+    use std::io::Write;
+    use std::sync::{Arc, Condvar, Mutex};
+    use std::time::Duration;
 
     #[derive(Default, Deserialize)]
     #[serde(rename_all(deserialize = "PascalCase"))]
@@ -112,15 +118,11 @@ mod tests {
     #[test]
     fn apply_config_should_bind_configuration_to_options() {
         // arrange
-        let config = ServiceRef::from(
+        let config = Ref::from(
             DefaultConfigurationBuilder::new()
-                .add_in_memory(
-                    [("Enabled", "true")]
-                        .iter()
-                        .map(|t| (t.0.to_owned(), t.1.to_owned()))
-                        .collect(),
-                )
+                .add_in_memory(&[("Enabled", "true")])
                 .build()
+                .unwrap()
                 .as_config(),
         );
         let provider = ServiceCollection::new()
@@ -138,15 +140,11 @@ mod tests {
     #[test]
     fn apply_config_at_should_bind_configuration_to_options() {
         // arrange
-        let config = ServiceRef::from(
+        let config = Ref::from(
             DefaultConfigurationBuilder::new()
-                .add_in_memory(
-                    [("Test:Enabled", "true")]
-                        .iter()
-                        .map(|t| (t.0.to_owned(), t.1.to_owned()))
-                        .collect(),
-                )
+                .add_in_memory(&[("Test:Enabled", "true")])
                 .build()
+                .unwrap()
                 .as_config(),
         );
         let provider = ServiceCollection::new()
@@ -159,5 +157,67 @@ mod tests {
 
         // assert
         assert!(options.get(Some("Test")).enabled);
+    }
+
+    #[test]
+    fn options_should_be_updated_after_configuration_change() {
+        // arrange
+        let path = temp_dir().join("options_from_json_1.json");
+        let mut json = json!({"enabled": true});
+
+        let mut file = File::create(&path).unwrap();
+        file.write_all(json.to_string().as_bytes()).unwrap();
+        drop(file);
+
+        let config: Ref<dyn Configuration> = Ref::from(
+            DefaultConfigurationBuilder::new()
+                .add_json_file(&path.is().reloadable())
+                .build()
+                .unwrap()
+                .as_config(),
+        );
+        let provider = ServiceCollection::new()
+            .apply_config::<TestOptions>(config.clone())
+            .build_provider()
+            .unwrap();
+
+        let token = config.reload_token();
+        let original = provider.get_required::<dyn OptionsMonitor<TestOptions>>().current_value();
+        let state = Arc::new((Mutex::new(false), Condvar::new()));
+        let _unused = token.register(
+            Box::new(|s| {
+                let data = s.unwrap();
+                let (reloaded, event) = &*(data.downcast_ref::<(Mutex<bool>, Condvar)>().unwrap());
+                *reloaded.lock().unwrap() = true;
+                event.notify_one();
+            }),
+            Some(state.clone()),
+        );
+
+        json = json!({"enabled": false});
+        file = File::create(&path).unwrap();
+        file.write_all(json.to_string().as_bytes()).unwrap();
+        drop(file);
+
+        let (mutex, event) = &*state;
+        let mut reloaded = mutex.lock().unwrap();
+
+        while !*reloaded {
+            reloaded = event
+                .wait_timeout(reloaded, Duration::from_secs(1))
+                .unwrap()
+                .0;
+        }
+
+        // act
+        let current = provider.get_required::<dyn OptionsMonitor<TestOptions>>().current_value();
+
+        // assert
+        if path.exists() {
+            remove_file(&path).ok();
+        }
+
+        assert_eq!(original.enabled, true);
+        assert_eq!(current.enabled, false);
     }
 }
