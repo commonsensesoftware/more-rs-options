@@ -1,32 +1,55 @@
 use crate::{OptionsChangeTokenSource, OptionsFactory, OptionsMonitorCache, Ref};
-use std::cell::RefCell;
-use std::rc::{Rc, Weak};
-use std::sync::Mutex;
-use tokens::{ChangeToken, NeverChangeToken};
+use std::ops::Deref;
+use std::sync::{Arc, RwLock, Weak};
+
+/// Represents a change subscription.
+///
+/// # Remarks
+///
+/// When the subscription is dropped, the underlying callback is unsubscribed.
+pub struct Subscription<T>(Arc<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>);
+
+impl<T> Subscription<T> {
+    /// Initializes a new change token registration.
+    pub fn new(callback: Arc<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>) -> Self {
+        Self(callback)
+    }
+}
 
 /// Defines the behavior for notifications when option instances change.
 pub trait OptionsMonitor<T> {
     /// Returns the current instance with the default options name.
-    fn current_value(&self) -> &T;
+    fn current_value(&self) -> Ref<T> {
+        self.get(None)
+    }
 
     /// Returns a configured instance with the given name.
     ///
     /// # Arguments
     ///
     /// * `name` - the name associated with the options.
-    fn get(&self, name: Option<&str>) -> &T;
+    fn get(&self, name: Option<&str>) -> Ref<T>;
 
     /// Registers a callback function to be invoked when the configured instance with the given name changes.
     ///
     /// # Arguments
     ///
-    /// * `listener` - a weak reference to callback function to invoke
-    fn on_change(&self, listener: Weak<dyn Fn(Option<&str>, &T)>);
+    /// * `listener` - the callback function to invoke
+    ///
+    /// # Returns
+    ///
+    /// A change subscription for the specified options. When the subscription is dropped, no further
+    /// notifications will be propagated.
+    fn on_change(
+        &self,
+        listener: Box<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>,
+    ) -> Subscription<T>;
 }
 
 /// Represents the default implementation for notifications when option instances change.
 pub struct DefaultOptionsMonitor<T> {
-    mediator: Rc<Mediator<T>>,
+    tracker: Arc<ChangeTracker<T>>,
+    _subscriptions: Vec<Box<dyn tokens::Subscription>>,
 }
 
 impl<T: 'static> DefaultOptionsMonitor<T> {
@@ -42,125 +65,138 @@ impl<T: 'static> DefaultOptionsMonitor<T> {
         sources: Vec<Ref<dyn OptionsChangeTokenSource<T>>>,
         factory: Ref<dyn OptionsFactory<T>>,
     ) -> Self {
-        let mediator = Rc::new(Mediator::new(cache, factory));
-        let instance = Self {
-            mediator: mediator.clone(),
-        };
-        let registrations = sources
-            .into_iter()
-            .map(|producer| ChangeTokenRegistration::new(producer, mediator.clone()));
+        let tracker = Arc::new(ChangeTracker::new(cache, factory));
+        let mut subscriptions = Vec::new();
 
-        mediator.mediate(registrations);
-        instance
+        // SAFETY: the following is not guaranteed to be safe unless 'async' is enabled
+        for source in sources {
+            let producer = Producer::new(source.clone());
+            let consumer = tracker.clone();
+            let state = source.name().map(|n| Arc::new(n.to_owned()));
+            let subscription: Box<dyn tokens::Subscription> = Box::new(tokens::on_change(
+                move || producer.token(),
+                move |state| {
+                    if let Some(name) = state {
+                        consumer.on_change(Some(name.as_str()));
+                    } else {
+                        consumer.on_change(None);
+                    };
+                },
+                state,
+            ));
+            subscriptions.push(subscription);
+        }
+
+        Self {
+            tracker,
+            _subscriptions: subscriptions,
+        }
     }
 }
 
 impl<T> OptionsMonitor<T> for DefaultOptionsMonitor<T> {
-    fn current_value(&self) -> &T {
-        self.get(None)
+    fn get(&self, name: Option<&str>) -> Ref<T> {
+        self.tracker.get(name)
     }
 
-    fn get(&self, name: Option<&str>) -> &T {
-        self.mediator.get(name)
-    }
-
-    fn on_change(&self, listener: Weak<dyn Fn(Option<&str>, &T)>) {
-        self.mediator.on_change(listener)
+    fn on_change(
+        &self,
+        listener: Box<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>,
+    ) -> Subscription<T> {
+        self.tracker.add(listener)
     }
 }
 
-struct Mediator<T> {
+struct ChangeTracker<T> {
     cache: Ref<dyn OptionsMonitorCache<T>>,
     factory: Ref<dyn OptionsFactory<T>>,
-    registrations: RefCell<Vec<Rc<ChangeTokenRegistration<T>>>>,
-    listeners: Mutex<Vec<Weak<dyn Fn(Option<&str>, &T)>>>,
+    listeners: RwLock<Vec<Weak<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>>>,
 }
 
-impl<T> Mediator<T> {
+impl<T> ChangeTracker<T> {
     fn new(cache: Ref<dyn OptionsMonitorCache<T>>, factory: Ref<dyn OptionsFactory<T>>) -> Self {
         Self {
             cache,
             factory,
-            registrations: RefCell::default(),
-            listeners: Mutex::default(),
+            listeners: Default::default(),
         }
     }
 
-    fn mediate(&self, registrations: impl Iterator<Item = Rc<ChangeTokenRegistration<T>>>) {
-        let mut collection = self.registrations.borrow_mut();
-
-        for registration in registrations {
-            collection.push(registration);
-        }
-    }
-
-    fn changed(&self, name: Option<&str>) {
-        self.cache.try_remove(name);
-
-        let options = self.get(name);
-        let mut listeners = self.listeners.lock().unwrap();
-
-        for i in (0..listeners.len()).rev() {
-            if let Some(callback) = listeners[i].upgrade() {
-                callback(name, options);
-            } else {
-                listeners.remove(i);
-            }
-        }
-    }
-
-    fn get(&self, name: Option<&str>) -> &T {
+    fn get(&self, name: Option<&str>) -> Ref<T> {
         self.cache
             .get_or_add(name, &|n| self.factory.create(n).unwrap())
     }
 
-    fn on_change(&self, listener: Weak<dyn Fn(Option<&str>, &T)>) {
-        self.listeners.lock().unwrap().push(listener);
+    fn add(&self, listener: Box<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>) -> Subscription<T> {
+        let mut listeners = self.listeners.write().unwrap();
+
+        // writes are much infrequent and we already need to escalate
+        // to a write-lock, so do the trimming of any dead callbacks now
+        for i in (0..listeners.len()).rev() {
+            if listeners[i].upgrade().is_none() {
+                listeners.remove(i);
+            }
+        }
+
+        let source: Arc<dyn Fn(Option<&str>, Ref<T>) + Send + Sync> = Arc::from(listener);
+
+        listeners.push(Arc::downgrade(&source));
+        Subscription::new(source)
+    }
+
+    fn on_change(&self, name: Option<&str>) {
+        // acquire a read-lock and capture any callbacks that are still alive.
+        // do NOT invoke the callback with the read-lock held. the callback might
+        // register a new callback on the same token which will result in a deadlock.
+        // invoking the callbacks after the read-lock is released ensures that won't happen.
+        let callbacks: Vec<_> = self
+            .listeners
+            .read()
+            .unwrap()
+            .iter()
+            .filter_map(|c| c.upgrade())
+            .collect();
+
+        self.cache.try_remove(name);
+
+        for callback in callbacks {
+            callback(name, self.get(name));
+        }
     }
 }
 
-struct ChangeTokenRegistration<T> {
-    producer: Ref<dyn OptionsChangeTokenSource<T>>,
-    consumer: Rc<Mediator<T>>,
-    token: RefCell<Box<dyn ChangeToken>>,
-    me: Weak<ChangeTokenRegistration<T>>,
-}
+unsafe impl<T> Send for ChangeTracker<T> {}
+unsafe impl<T> Sync for ChangeTracker<T> {}
 
-impl<T: 'static> ChangeTokenRegistration<T> {
-    fn new(producer: Ref<dyn OptionsChangeTokenSource<T>>, consumer: Rc<Mediator<T>>) -> Rc<Self> {
-        let instance = Rc::new_cyclic(|me| Self {
-            producer,
-            consumer,
-            token: RefCell::new(Box::new(NeverChangeToken::new())),
-            me: me.clone(),
-        });
-        let token = instance.producer.token();
-        instance.register(token);
-        return instance;
-    }
+struct Producer<T>(Ref<dyn OptionsChangeTokenSource<T>>);
 
-    fn register(&self, token: Box<dyn ChangeToken>) {
-        let sender = self.me.clone();
-        token.register(Box::new(move || {
-            ChangeTokenRegistration::<T>::fire(sender.clone());
-        }));
-        self.token.replace(token);
-    }
-
-    fn fire(sender: Weak<ChangeTokenRegistration<T>>) {
-        let me = sender.upgrade().unwrap();
-        me.consumer.changed(me.producer.name());
-        me.register(me.producer.token());
+impl<T> Producer<T> {
+    fn new(source: Ref<dyn OptionsChangeTokenSource<T>>) -> Self {
+        Self(source)
     }
 }
+
+impl<T> Deref for Producer<T> {
+    type Target = dyn OptionsChangeTokenSource<T>;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
+    }
+}
+
+unsafe impl<T> Send for Producer<T> {}
+unsafe impl<T> Sync for Producer<T> {}
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
     use crate::*;
-    use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-    use tokens::SingleChangeToken;
+    use std::{
+        cell::RefCell,
+        sync::atomic::{AtomicBool, AtomicU8, Ordering},
+    };
+    use tokens::{ChangeToken, SharedChangeToken, SingleChangeToken};
 
     #[derive(Default)]
     struct Config {
@@ -209,58 +245,41 @@ mod tests {
 
     #[derive(Default)]
     struct ConfigSource {
-        triggers: RefCell<Vec<Weak<dyn Fn()>>>,
+        token: SharedChangeToken<SingleChangeToken>,
     }
 
     impl ConfigSource {
         fn changed(&self) {
-            let mut triggers = self.triggers.replace(Vec::default());
-
-            for trigger in triggers.drain(..) {
-                if let Some(callback) = trigger.upgrade() {
-                    (callback)()
-                }
-            }
+            self.token.notify()
         }
     }
 
     impl OptionsChangeTokenSource<Config> for ConfigSource {
         fn token(&self) -> Box<dyn ChangeToken> {
-            let token = Box::new(SingleChangeToken::default());
-
-            loop {
-                if let Ok(mut triggers) = self.triggers.try_borrow_mut() {
-                    triggers.push(token.trigger());
-                    break;
-                }
-            }
-
-            token
+            Box::new(self.token.clone())
         }
     }
 
     struct Foo {
         monitor: Ref<dyn OptionsMonitor<Config>>,
-        handler: Rc<dyn Fn(Option<&str>, &Config)>,
-        state: Rc<OptionsState>,
+        _sub: Subscription<Config>,
+        state: Arc<OptionsState>,
         retries: RefCell<u8>,
     }
 
     impl Foo {
         fn new(monitor: Ref<dyn OptionsMonitor<Config>>) -> Self {
-            let state = Rc::new(OptionsState::default());
-            let other_state = state.clone();
-            let instance = Self {
+            let state = Arc::new(OptionsState::default());
+            let other = state.clone();
+
+            Self {
                 monitor: monitor.clone(),
-                handler: Rc::new(move |_name: Option<&str>, _options: &Config| {
-                    other_state.mark_dirty()
-                }),
+                _sub: monitor.on_change(Box::new(
+                    move |_name: Option<&str>, _options: Ref<Config>| other.mark_dirty(),
+                )),
                 state,
                 retries: RefCell::default(),
-            };
-
-            monitor.on_change(Rc::downgrade(&instance.handler.clone()));
-            instance
+            }
         }
 
         fn retries(&self) -> u8 {
