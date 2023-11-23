@@ -1,3 +1,5 @@
+{{#include links.md}}
+
 # Configuration Binding
 
 The preferred way to read related configuration values is using the options pattern. For example, to read the
@@ -25,12 +27,12 @@ pub struct PositionOptions {
 An options struct:
 
 - must be public.
-- should implement the `Default` trait; otherwise a custom `OptionsFactory<TOptions>` is required.
+- should implement the `Default` trait; otherwise a custom [`OptionsFactory`] is required.
 - binds public read-write fields.
 
 The following code:
 
-- calls `ConfigurationBinder::bind` to bind the `PositionOptions` class to the `"Position"` section.
+- calls [`ConfigurationBinder::bind`] to bind the `PositionOptions` class to the `"Position"` section.
 - displays the `Position` configuration data.
 - requires the **binder** feature to be enabled
   - which transitively enables the **serde** feature
@@ -62,7 +64,7 @@ impl<'a> TestModel<'a> {
 }
 ```
 
-`ConfigurationBinder::reify<T>` binds and returns the specified type. `ConfigurationBinder::reify<T>` may be more convenient than using `ConfigurationBinder::bind`. The following code shows how to use `ConfigurationBinder::reify<T>` with the `PositionOptions` struct:
+[`ConfigurationBinder::reify`] binds and returns the specified type. [`ConfigurationBinder::reify`] may be more convenient than using [`ConfigurationBinder::bind`]. The following code shows how to use [`ConfigurationBinder::reify`] with the `PositionOptions` struct:
 
 ```rust
 use config::*;

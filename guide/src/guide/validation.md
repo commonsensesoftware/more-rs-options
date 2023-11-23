@@ -1,6 +1,8 @@
+{{#include links.md}}
+
 # Validation
 
-Options validation enables configured option values to be validated. Validation is performed via `ValidationOptions<T>`, which is typically invoked during options construction through `OptionsFactory<T>` rather than imperatively.
+Options validation enables configured option values to be validated. Validation is performed via [`ValidateOptions`], which is typically invoked during options construction through [`OptionsFactory`] rather than imperatively.
 
 Consider the following `appsettings.json` file:
 
@@ -29,7 +31,7 @@ pub struct MyConfigOptions {
 The following code:
 
 - uses dependency injection (DI).
-- calls `add_options` to get an `OptionsBuilder<T>` that binds to the `MyConfigOptions` struct.
+- calls [`add_options`] to get an [`OptionsBuilder`] that binds to the `MyConfigOptions` struct.
 - invokes a closure to validate the struct.
 
 ```rust
@@ -57,9 +59,9 @@ fn main() {
 
 Dependency injection is not required to enforce validation, but it is the simplest and fastest way to compose all of the necessary pieces together.
 
-## Implementing `ValidateOptions<T>`
+## Implementing `ValidateOptions`
 
-`ValidateOptions<T>` enables moving the validation code out of a closure and into a struct. The following struct implements `ValidateOptions<T>`:
+[`ValidateOptions`] enables moving the validation code out of a closure and into a struct. The following struct implements [`ValidateOptions`]:
 
 ```rust
 use options::*;
@@ -121,10 +123,10 @@ fn main() {
 
 Order of operation:
 
-1. Register options services, including `OptionsFactory<MyConfigOptions>`, via `apply_config_at`
-2. Register `MyConfigValidation` as `ValidationOptions<MyConfigOptions>`
+1. Register options services, including [`OptionsFactory`], via [`apply_config_at`]
+2. Register `MyConfigValidation` as [`ValidationOptions`]
 3. Enforce validation through
-   1. `ServiceProvider::get_required`, which calls
-   2. `OptionsFactory<MyConfigOptions>`, which calls
+   1. [`ServiceProvider::get_required`], which calls
+   2. [`OptionsFactory`], which calls
    3. `MyConfigValidation::validate`
-   4. `Options<MyConfigOptions>::value` returns a valid `MyConfigOptions` or panics
+   4. [`Options::value`] returns a valid `MyConfigOptions` or panics
