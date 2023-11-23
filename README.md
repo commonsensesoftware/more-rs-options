@@ -19,9 +19,9 @@ You may be looking for:
 This crate provides the following features:
 
 - _default_ - Abstractions for options
+- **async** - Enable options in asynchronous contexts
 - **di** - Dependency injection extensions
 - **cfg** - Dependency injection extensions to bind configurations to options
-- **async** - Enable options in asynchronous contexts
 
 ## Options Pattern
 

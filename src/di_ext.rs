@@ -4,7 +4,7 @@ use di::{
     ServiceCollection, ServiceDescriptor, ServiceProvider,
 };
 
-/// Defines extension methods for the `ServiceCollection` struct.
+/// Defines extension methods for the [`ServiceCollection`](di::ServiceCollection) struct.
 pub trait OptionsServiceExtensions {
     /// Registers an options type that will have all of its associated services registered.
     fn add_options<T: Default + 'static>(&mut self) -> OptionsBuilder<T>;
@@ -13,7 +13,7 @@ pub trait OptionsServiceExtensions {
     ///
     /// # Arguments
     ///
-    /// * `name` - the name associated with the options
+    /// * `name` - The name associated with the options
     fn add_named_options<T: Default + 'static>(
         &mut self,
         name: impl AsRef<str>,
@@ -23,7 +23,7 @@ pub trait OptionsServiceExtensions {
     ///
     /// # Arguments
     ///
-    /// * `factory` - the function used to create the associated options factory
+    /// * `factory` - The function used to create the associated options factory
     fn add_options_with<T, F>(&mut self, factory: F) -> OptionsBuilder<T>
     where
         F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + 'static;
@@ -32,8 +32,8 @@ pub trait OptionsServiceExtensions {
     ///
     /// # Arguments
     ///
-    /// * `name` - the name associated with the options
-    /// * `factory` - the function used to create the associated options factory
+    /// * `name` - The name associated with the options
+    /// * `factory` - The function used to create the associated options factory
     fn add_named_options_with<T, F>(
         &mut self,
         name: impl AsRef<str>,
@@ -55,7 +55,7 @@ pub trait OptionsServiceExtensions {
     ///
     /// # Arguments
     ///
-    /// * `name` - the name associated with the options
+    /// * `name` - The name associated with the options
     /// * `setup` - The setup action used to configure options
     fn configure_named_options<T: Default + 'static, F>(
         &mut self,
@@ -78,7 +78,7 @@ pub trait OptionsServiceExtensions {
     ///
     /// # Arguments
     ///
-    /// * `name` - the name associated with the options
+    /// * `name` - The name associated with the options
     /// * `setup` - The setup action used to configure options
     fn post_configure_named_options<T: Default + 'static, F>(
         &mut self,

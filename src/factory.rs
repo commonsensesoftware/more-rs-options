@@ -1,6 +1,6 @@
 use crate::*;
 
-/// Defines the behavior of an object that creates configuration options.
+/// Defines the behavior of an object that creates configuration [`Options`](crate::Options).
 pub trait OptionsFactory<T> {
     /// Creates and returns new configuration options.
     ///
@@ -10,7 +10,7 @@ pub trait OptionsFactory<T> {
     fn create(&self, name: Option<&str>) -> Result<T, ValidateOptionsResult>;
 }
 
-/// Represents the default factory used to create configuration options.
+/// Represents the default factory used to create configuration [`Options`](crate::Options).
 #[derive(Default)]
 pub struct DefaultOptionsFactory<T: Default> {
     configurations: Vec<Ref<dyn ConfigureOptions<T>>>,
@@ -23,9 +23,9 @@ impl<T: Default> DefaultOptionsFactory<T> {
     ///
     /// # Arguments
     ///
-    /// * `configurations` - The configurations used to configure options.
-    /// * `post_configurations` - The configurations used to post-configure options.
-    /// * `validations` - The validations used to validate options.
+    /// * `configurations` - The configurations used to [configure options](crate::ConfigureOptions).
+    /// * `post_configurations` - The configurations used to [post-configure options](crate::PostConfigureOptions).
+    /// * `validations` - The validations used to [validate options](crate::ValidateOptions).
     pub fn new(
         configurations: Vec<Ref<dyn ConfigureOptions<T>>>,
         post_configurations: Vec<Ref<dyn PostConfigureOptions<T>>>,
@@ -63,7 +63,7 @@ impl<T: Default> OptionsFactory<T> for DefaultOptionsFactory<T> {
             }
 
             if !failures.is_empty() {
-                return Err(ValidateOptionsResult::fail_many(failures));
+                return Err(ValidateOptionsResult::fail_many(failures.iter()));
             }
         }
 

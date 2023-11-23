@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-/// Defines the behavior of something that configures options.
+/// Defines the behavior of something that configures [`Options`](crate::Options).
 ///
 /// # Remarks
 ///
@@ -15,7 +15,7 @@ pub trait ConfigureOptions<T> {
     fn configure(&self, name: Option<&str>, options: &mut T);
 }
 
-/// Defines the behavior of something that configures options.
+/// Defines the behavior of something that configures [`Options`](crate::Options).
 ///
 /// # Remarks
 ///
@@ -30,7 +30,7 @@ pub trait PostConfigureOptions<T> {
     fn post_configure(&self, name: Option<&str>, options: &mut T);
 }
 
-/// Creates and returns options configuration for the specified action.
+/// Creates and returns [options configuration](ConfigureOptions) for the specified action.
 ///
 /// # Arguments
 ///
@@ -42,7 +42,7 @@ where
     _ConfigureOptions::new(action)
 }
 
-/// Creates and returns options post-configuration for the specified action.
+/// Creates and returns [options post-configuration](PostConfigureOptions) for the specified action.
 ///
 /// # Arguments
 ///

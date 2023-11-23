@@ -3,7 +3,7 @@ use di::{singleton_factory, transient_factory, ServiceCollection, Ref};
 use std::ops::{Deref, DerefMut};
 use std::{marker::PhantomData, rc::Rc};
 
-/// Represents a builder used to configure options.
+/// Represents a builder used to configure [`Options`](crate::Options).
 pub struct OptionsBuilder<'a, T: 'static> {
     name: Option<String>,
     services: &'a mut ServiceCollection,
@@ -15,8 +15,8 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
     ///
     /// # Arguments
     ///
-    /// * `services` - the associated collection of services
-    /// * `name` - the optional name associated with the options
+    /// * `services` - The associated [collection of services](di::ServiceCollection)
+    /// * `name` - The optional name associated with the options
     pub fn new(services: &'a mut ServiceCollection, name: Option<&str>) -> Self {
         Self {
             name: name.map(|s| s.to_owned()),
@@ -30,16 +30,16 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self.name.as_deref()
     }
 
-    /// Gets the associated collection of services
+    /// Gets the associated [collection of services](di::ServiceCollection)
     pub fn services(&mut self) -> &mut ServiceCollection {
         self.services
     }
 
-    /// Registers an action used to configure a particular type of options.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options).
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn configure<F>(self, setup: F) -> Self
     where
         F: Fn(&mut T) + 'static,
@@ -51,11 +51,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options with a single dependency.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options) with a single dependency.
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn configure1<F, D>(self, setup: F) -> Self
     where
         F: Fn(&mut T, Ref<D>) + 'static,
@@ -76,11 +76,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options with two dependencies.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options) with two dependencies.
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn configure2<F, D1, D2>(self, setup: F) -> Self
     where
         F: Fn(&mut T, Ref<D1>, Ref<D2>) + 'static,
@@ -103,11 +103,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options with three dependencies.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options) with three dependencies.
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn configure3<F, D1, D2, D3>(self, setup: F) -> Self
     where
         F: Fn(&mut T, Ref<D1>, Ref<D2>, Ref<D3>) + 'static,
@@ -132,11 +132,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options with four dependencies.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options) with four dependencies.
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn configure4<F, D1, D2, D3, D4>(self, setup: F) -> Self
     where
         F: Fn(&mut T, Ref<D1>, Ref<D2>, Ref<D3>, Ref<D4>) + 'static,
@@ -163,11 +163,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options with five dependencies.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options) with five dependencies.
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn configure5<F, D1, D2, D3, D4, D5>(self, setup: F) -> Self
     where
         F: Fn(
@@ -203,11 +203,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options).
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn post_configure<F>(self, setup: F) -> Self
     where
         F: Fn(&mut T) + 'static,
@@ -219,11 +219,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options with a single dependency.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options) with a single dependency.
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn post_configure1<F, D>(self, setup: F) -> Self
     where
         F: Fn(&mut T, Ref<D>) + 'static,
@@ -242,11 +242,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options with two dependencies.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options) with two dependencies.
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn post_configure2<F, D1, D2>(self, setup: F) -> Self
     where
         F: Fn(&mut T, Ref<D1>, Ref<D2>) + 'static,
@@ -270,11 +270,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options with three dependencies.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options) with three dependencies.
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn post_configure3<F, D1, D2, D3>(self, setup: F) -> Self
     where
         F: Fn(&mut T, Ref<D1>, Ref<D2>, Ref<D3>) + 'static,
@@ -300,11 +300,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options with four dependencies.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options) with four dependencies.
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn post_configure4<F, D1, D2, D3, D4>(self, setup: F) -> Self
     where
         F: Fn(&mut T, Ref<D1>, Ref<D2>, Ref<D3>, Ref<D4>) + 'static,
@@ -332,11 +332,11 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to configure a particular type of options with five dependencies.
+    /// Registers an action used to configure a particular type of [`Options`](crate::Options) with five dependencies.
     ///
     /// # Arguments
     ///
-    /// * `setup` - the configuration action
+    /// * `setup` - The configuration action
     pub fn post_configure5<F, D1, D2, D3, D4, D5>(self, setup: F) -> Self
     where
         F: Fn(
@@ -373,12 +373,12 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to validate a particular type of options.
+    /// Registers an action used to validate a particular type of [`Options`](crate::Options).
     ///
     /// # Arguments
     ///
-    /// * `action` - the validation action
-    /// * `failure_message` - the message used when validation fails
+    /// * `action` - The validation action
+    /// * `failure_message` - The message used when validation fails
     pub fn validate<F, M>(self, action: F, failure_message: M) -> Self
     where
         F: Fn(&T) -> bool + 'static,
@@ -395,12 +395,12 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to validate a particular type of options with a single dependency.
+    /// Registers an action used to validate a particular type of [`Options`](crate::Options) with a single dependency.
     ///
     /// # Arguments
     ///
-    /// * `action` - the validation action
-    /// * `failure_message` - the message used when validation fails
+    /// * `action` - The validation action
+    /// * `failure_message` - The message used when validation fails
     pub fn validate1<F, M, D>(self, action: F, failure_message: M) -> Self
     where
         F: Fn(&T, Ref<D>) -> bool + 'static,
@@ -424,12 +424,12 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to validate a particular type of options with two dependencies.
+    /// Registers an action used to validate a particular type of [`Options`](crate::Options) with two dependencies.
     ///
     /// # Arguments
     ///
-    /// * `action` - the validation action
-    /// * `failure_message` - the message used when validation fails
+    /// * `action` - The validation action
+    /// * `failure_message` - The message used when validation fails
     pub fn validate2<F, M, D1, D2>(self, action: F, failure_message: M) -> Self
     where
         F: Fn(&T, Ref<D1>, Ref<D2>) -> bool + 'static,
@@ -455,12 +455,12 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to validate a particular type of options with three dependencies.
+    /// Registers an action used to validate a particular type of [`Options`](crate::Options) with three dependencies.
     ///
     /// # Arguments
     ///
-    /// * `action` - the validation action
-    /// * `failure_message` - the message used when validation fails
+    /// * `action` - The validation action
+    /// * `failure_message` - The message used when validation fails
     pub fn validate3<F, M, D1, D2, D3>(self, action: F, failure_message: M) -> Self
     where
         F: Fn(&T, Ref<D1>, Ref<D2>, Ref<D3>) -> bool + 'static,
@@ -488,12 +488,12 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to validate a particular type of options with four dependencies.
+    /// Registers an action used to validate a particular type of [`Options`](crate::Options) with four dependencies.
     ///
     /// # Arguments
     ///
-    /// * `action` - the validation action
-    /// * `failure_message` - the message used when validation fails
+    /// * `action` - The validation action
+    /// * `failure_message` - The message used when validation fails
     pub fn validate4<F, M, D1, D2, D3, D4>(self, action: F, failure_message: M) -> Self
     where
         F: Fn(&T, Ref<D1>, Ref<D2>, Ref<D3>, Ref<D4>) -> bool + 'static,
@@ -523,12 +523,12 @@ impl<'a, T: 'static> OptionsBuilder<'a, T> {
         self
     }
 
-    /// Registers an action used to validate a particular type of options with five dependencies.
+    /// Registers an action used to validate a particular type of [`Options`](crate::Options) with five dependencies.
     ///
     /// # Arguments
     ///
-    /// * `action` - the validation action
-    /// * `failure_message` - the message used when validation fails
+    /// * `action` - The validation action
+    /// * `failure_message` - The message used when validation fails
     pub fn validate5<F, M, D1, D2, D3, D4, D5>(self, action: F, failure_message: M) -> Self
     where
         F: Fn(

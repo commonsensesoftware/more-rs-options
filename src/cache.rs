@@ -2,7 +2,7 @@ use crate::Ref;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-/// Defines the behavior of an options monitor cache.
+/// Defines the behavior of an [`Options`](crate::Options) monitor cache.
 pub trait OptionsMonitorCache<T> {
     /// Gets or adds options with the specified name.
     ///

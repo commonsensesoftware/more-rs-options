@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Result as FormatResult};
 
-/// Represents the result of options validation.
+/// Represents the result of [`Options`](crate::Options) validation.
 #[derive(Clone, Debug)]
 pub struct ValidateOptionsResult {
     succeeded: bool,
