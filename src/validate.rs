@@ -60,17 +60,25 @@ impl ValidateOptionsResult {
     }
 
     /// Creates a result when validation failed.
-    pub fn fail(failure_message: impl AsRef<str>) -> Self {
-        Self::fail_many(vec![failure_message.as_ref().to_owned()])
+    ///
+    /// # Arguments
+    ///
+    /// `failure` - The failure message
+    pub fn fail<S: AsRef<str>>(failure: S) -> Self {
+        Self::fail_many([failure].iter())
     }
 
     /// Creates a result when validation failed for many reasons.
-    pub fn fail_many(failures: Vec<String>) -> Self {
+    pub fn fail_many<S, I>(failures: I) -> Self
+    where
+        S: AsRef<str>,
+        I: Iterator<Item = S>,
+    {
         Self {
             succeeded: false,
             skipped: false,
             failed: true,
-            failures,
+            failures: failures.map(|f| f.as_ref().to_owned()).collect(),
         }
     }
 }
@@ -148,9 +156,9 @@ mod tests {
     #[test]
     fn fail_many_should_return_joined_message() {
         // arrange
-        let failures = vec!["Failure 1".to_owned(), "Failure 2".to_owned()];
-        let result = ValidateOptionsResult::fail_many(failures);
-        
+        let failures = ["Failure 1", "Failure 2"];
+        let result = ValidateOptionsResult::fail_many(failures.iter());
+
         // act
         let message = result.failure_message();
 
@@ -161,11 +169,8 @@ mod tests {
     #[test]
     fn fail_many_should_return_failures() {
         // arrange
-        let expected: Vec<String> = vec!["Failure 1", "Failure 2"]
-            .into_iter()
-            .map(String::from)
-            .collect();
-        let result = ValidateOptionsResult::fail_many(expected.clone());
+        let expected = ["Failure 1", "Failure 2"];
+        let result = ValidateOptionsResult::fail_many(expected.iter());
 
         // act
         let failures = result.failures();
