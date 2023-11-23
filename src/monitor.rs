@@ -16,7 +16,7 @@ impl<T> Subscription<T> {
     }
 }
 
-/// Defines the behavior for notifications when option instances change.
+/// Defines the behavior for notifications when [`Options`](crate::Options) instances change.
 pub trait OptionsMonitor<T> {
     /// Returns the current instance with the default options name.
     fn current_value(&self) -> Ref<T> {
@@ -27,14 +27,14 @@ pub trait OptionsMonitor<T> {
     ///
     /// # Arguments
     ///
-    /// * `name` - the name associated with the options.
+    /// * `name` - The name associated with the options.
     fn get(&self, name: Option<&str>) -> Ref<T>;
 
     /// Registers a callback function to be invoked when the configured instance with the given name changes.
     ///
     /// # Arguments
     ///
-    /// * `listener` - the callback function to invoke
+    /// * `listener` - The callback function to invoke
     ///
     /// # Returns
     ///
@@ -57,9 +57,9 @@ impl<T: 'static> DefaultOptionsMonitor<T> {
     ///
     /// # Arguments
     ///
-    /// * `cache` - the [cache](trait.OptionsMonitorCache.html) used for monitored options
-    /// * `sources` - the [source tokens](trait.OptionsChangeToken.html) used to track option changes
-    /// * `factory` - the [factory](trait.OptionsFactory.html) used to create new options
+    /// * `cache` - The [cache](crate::OptionsMonitorCache) used for monitored options
+    /// * `sources` - The [source tokens](crate::OptionsChangeTokenSource) used to track option changes
+    /// * `factory` - The [factory](crate::OptionsFactory) used to create new options
     pub fn new(
         cache: Ref<dyn OptionsMonitorCache<T>>,
         sources: Vec<Ref<dyn OptionsChangeTokenSource<T>>>,

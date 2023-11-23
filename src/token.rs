@@ -1,8 +1,8 @@
 use tokens::ChangeToken;
 
-/// Used to fetch [`ChangeToken`](trait.ChangeToken.html) used for tracking options changes.
+/// Used to fetch [`ChangeToken`](tokens::ChangeToken) used for tracking options changes.
 pub trait OptionsChangeTokenSource<TOptions> {
-    /// Creates and returns a [`ChangeToken`](trait.ChangeToken.html) which can be
+    /// Creates and returns a [`ChangeToken`](tokens::ChangeToken) which can be
     /// used to register a change notification callback.
     fn token(&self) -> Box<dyn ChangeToken>;
 

@@ -6,7 +6,8 @@ use serde::de::DeserializeOwned;
 use std::marker::PhantomData;
 use tokens::ChangeToken;
 
-/// Represents a change token for monitored options that are notified when configuration changes.
+/// Represents a change token for monitored [`Options`](crate::Options) that are
+/// notified when configuration changes.
 pub struct ConfigurationChangeTokenSource<TOptions> {
     name: Option<String>,
     configuration: Ref<dyn Configuration>,
@@ -19,7 +20,7 @@ impl<TOptions> ConfigurationChangeTokenSource<TOptions> {
     /// # Arguments
     ///
     /// * `name` - The optional name of the options being watched
-    /// * `configuration` - The source configuration
+    /// * `configuration` - The source [configuration](config::Configuration)
     pub fn new(name: Option<&str>, configuration: Ref<dyn Configuration>) -> Self {
         Self {
             name: name.map(|s| s.to_owned()),
@@ -39,14 +40,23 @@ impl<TOptions> OptionsChangeTokenSource<TOptions> for ConfigurationChangeTokenSo
     }
 }
 
-/// Defines extension methods for the `ServiceCollection` struct.
+/// Defines extension methods for the [`ServiceCollection`](di::ServiceCollection) struct.
 pub trait OptionsConfigurationServiceExtensions {
     /// Registers an options type that will have all of its associated services registered.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `configuration` - The [configuration](config::Configuration) applied to the options
     fn apply_config<T>(&mut self, configuration: Ref<dyn Configuration>) -> OptionsBuilder<T>
     where
         T: Default + DeserializeOwned + 'static;
 
     /// Registers an options type that will have all of its associated services registered.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `configuration` - The [configuration](config::Configuration) applied to the options
+    /// * `key` - The key to the part of the [configuration](config::Configuration) applied to the options
     fn apply_config_at<T>(
         &mut self,
         configuration: Ref<dyn Configuration>,

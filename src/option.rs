@@ -6,7 +6,7 @@ pub trait Options<T> {
     fn value(&self) -> Ref<T>;
 }
 
-/// Creates a wrapper around a value to return itself as [options](trait.Options.html).
+/// Creates a wrapper around a value to return itself as [`Options`](Options).
 ///
 /// # Arguments
 ///

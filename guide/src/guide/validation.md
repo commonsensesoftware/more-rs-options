@@ -124,7 +124,7 @@ Order of operation:
 1. Register options services, including `OptionsFactory<MyConfigOptions>`, via `apply_config_at`
 2. Register `MyConfigValidation` as `ValidationOptions<MyConfigOptions>`
 3. Enforce validation through
-   1. `ServiceProvider.get_required`, which calls
+   1. `ServiceProvider::get_required`, which calls
    2. `OptionsFactory<MyConfigOptions>`, which calls
-   3. `MyConfigValidation.validate`
+   3. `MyConfigValidation::validate`
    4. `Options<MyConfigOptions>::value` returns a valid `MyConfigOptions` or panics

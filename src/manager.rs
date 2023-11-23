@@ -1,6 +1,6 @@
 use crate::{Options, OptionsCache, OptionsFactory, OptionsMonitorCache, OptionsSnapshot, Ref};
 
-/// Represents an object that manages options and option snapshots.
+/// Represents an object that manages [`Options`](crate::Options) and [option snapshots](crate::OptionsSnapshot).
 pub struct OptionsManager<T> {
     factory: Ref<dyn OptionsFactory<T>>,
     cache: OptionsCache<T>,
@@ -11,7 +11,7 @@ impl<T> OptionsManager<T> {
     ///
     /// # Arguments
     ///
-    /// * `factory` - The [factory](trait.OptionsFactory.html) used to create new options.
+    /// * `factory` - The [factory](crate::OptionsFactory) used to create new options.
     pub fn new(factory: Ref<dyn OptionsFactory<T>>) -> Self {
         Self {
             factory,
