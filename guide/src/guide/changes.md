@@ -1,16 +1,18 @@
+{{#include links.md}}
+
 # Runtime Changes
 
 The options framework supports responding to setting changes at runtime when they occur. There are a number of scenarios when that may happen, such as an underlying configuration file has changed. The options framework doesn't understand how or what has changed, only that a change has occurred. In response to the change, the corresponding options will be updated.
 
 ## Snapshot
 
-When using `OptionsSnapshot<T>`:
+When using [`OptionsSnapshot`]:
 
 - options are computed once per request when accessed and cached for the lifetime of the request.
-- may incur a significant performance penalty because it's a `Scoped` service and is recomputed per request.
+- may incur a significant performance penalty because it's a [`Scoped`] service and is recomputed per request.
 - changes to the configuration are read after the application starts when using configuration providers that support reading updated configuration values.
 
-The following code uses `OptionsSnapshot<T>`:
+The following code uses [`OptionsSnapshot`]:
 
 ```rust
 use crate::*;
@@ -56,10 +58,10 @@ fn main() {
 
 Monitored options will reflect the current setting values whenever an underlying source changes.
 
-The difference between `OptionsMonitor<T>` and `OptionsSnapshot<T>` is that:
+The difference between [`OptionsMonitor`] and [`OptionsSnapshot`] is that:
 
-- `OptionsMonitor<T>` is a `Singleton` service that retrieves current option values at any time, which is especially useful in singleton dependencies.
-- `OptionsSnapshot<T>` is a `Scoped` service and provides a snapshot of the options at the time the `OptionsSnapshot<T>` struct is constructed. Options snapshots are designed for use with `Transient` and `Scoped` dependencies.
+- [`OptionsMonitor`] is a [`Singleton`] service that retrieves current option values at any time, which is especially useful in singleton dependencies.
+- [`OptionsSnapshot`] is a [`Scoped`] service and provides a snapshot of the options at the time the [`OptionsSnapshot`] struct is constructed. Options snapshots are designed for use with [`Transient`] and [`Scoped`] dependencies.
 
 The following code registers a configuration instance which `MyOptions` binds against:
 
