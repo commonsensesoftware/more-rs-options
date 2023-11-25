@@ -7,8 +7,14 @@ description = "Provides support for options"
 keywords = ["more", "options"]
 license = "MIT"
 readme = "README.md"
+homepage = "https://commonsensesoftware.github.io/more-rs-options/"
 repository = "https://github.com/commonsensesoftware/more-rs-options"
 include = ["src/*.rs", "README.md"]
+
+# RUSTDOCFLAGS="--cfg docsrs"; cargo +nightly doc
+[package.metadata.docs.rs]
+features = ["di", "cfg"]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [lib]
 name = "options"
