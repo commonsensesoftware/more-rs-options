@@ -1,8 +1,9 @@
 [package]
 name = "more-options"
-version = "2.0.0"
+version = "3.0.0"
 edition = "2018"
-authors = ["Chris Martinez <chris_martinez_77@hotmail.com>"]
+rust-version = "1.60"
+authors = ["Chris Martinez <chris.s.martinez@hotmail.com>"]
 description = "Provides support for options"
 keywords = ["more", "options"]
 license = "MIT"
@@ -24,31 +25,32 @@ doctest = false
 [features]
 di = ["more-di"]
 cfg = ["di", "more-config", "serde"]
-async = ["more-di/async"]
+async = ["more-di?/async"]
 
 [dependencies]
-more-changetoken = "1.0"
+more-changetoken = "2.0"
 serde = { version = "1.0", optional = true }
 
 [dependencies.more-di]
-version = "2.1"
+version = "3.0"
 default-features = false
 features = ["builder"]
 optional = true
 
 [dependencies.more-config]
-version = "1.0"
+version = "2.0"
 default-features = false
 features = ["binder"]
 optional = true
 
 [dev-dependencies]
-more-config = { version = "1.0", features = ["mem", "binder"] }
+more-config = { version = "2.0", features = ["binder", "mem", "json"] }
 more-options = { path = ".", features = ["cfg"] }
 serde = { version = "1.0", features = ["derive"] }
-test-case = "2.2.1"
+serde_json = "1.0"
+test-case = "2.2"
 
 [dev-dependencies.more-di]
-version = "2.1"
+version = "3.0"
 default-features = false
 features = ["builder"]
