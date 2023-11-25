@@ -101,12 +101,13 @@ You can construct the options from the settings by including the [more-config](h
 
 ```rust
 use crate::*;
-use config::*;
-use std::path::PathBuf;
+use config::{*, ext::*};
 
 fn main() {
-    let path = PathBuf::from("appsettings.json");
-    let config = DefaultConfigurationBuilder::new().add_json_file(&path).build();
+    let config = DefaultConfigurationBuilder::new()
+        .add_json_file("appsettings.json")
+        .build()
+        .unwrap();
     let options: EndpointOptions = config.reify();
     let client = HttpClient::new(options);
     // TODO: use the client
@@ -119,15 +120,14 @@ You can go one step further and combine that configuration with the [more-di](ht
 use crate::*;
 use config::{*, ext::*};
 use di::*;
-use std::path::PathBuf;
 use std::rc::Rc;
 
 fn main() {
-    let path = PathBuf::from("appsettings.json");
     let config = Rc::from(
         DefaultConfigurationBuilder::new()
-            .add_json_file(&path)
+            .add_json_file("appsettings.json")
             .build()
+            .unwrap()
             .as_config());
     let provider = ServiceCollection::new()
         .add(transient_as_self::<HttpClient>())
