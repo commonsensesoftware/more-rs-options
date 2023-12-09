@@ -1,6 +1,6 @@
 [package]
 name = "more-options"
-version = "3.0.0"
+version = "3.0.1"
 edition = "2018"
 rust-version = "1.60"
 authors = ["Chris Martinez <chris.s.martinez@hotmail.com>"]
