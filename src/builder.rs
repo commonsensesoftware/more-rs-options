@@ -574,10 +574,12 @@ fn names_equal(name: Option<&str>, other_name: Option<&str>) -> bool {
 
     if matches_all || name == other_name {
         return true;
+    } else if other_name.is_none() {
+        return false;
     }
 
-    let name1 = name.clone().unwrap();
-    let name2 = other_name.clone().unwrap();
+    let name1 = name.unwrap();
+    let name2 = other_name.unwrap();
 
     (name1.len() == name2.len())
         && ((name1.to_uppercase() == name2.to_uppercase())
