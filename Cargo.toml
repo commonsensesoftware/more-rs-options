@@ -38,13 +38,13 @@ features = ["builder"]
 optional = true
 
 [dependencies.more-config]
-version = "2.0"
+version = "2.1"
 default-features = false
 features = ["binder"]
 optional = true
 
 [dev-dependencies]
-more-config = { version = "2.0", features = ["binder", "mem", "json"] }
+more-config = { version = "2.1", features = ["binder", "mem", "json"] }
 more-options = { path = ".", features = ["cfg"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
