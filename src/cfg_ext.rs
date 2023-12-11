@@ -43,18 +43,18 @@ impl<TOptions> OptionsChangeTokenSource<TOptions> for ConfigurationChangeTokenSo
 /// Defines extension methods for the [`ServiceCollection`](di::ServiceCollection) struct.
 pub trait OptionsConfigurationServiceExtensions {
     /// Registers an options type that will have all of its associated services registered.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `configuration` - The [configuration](config::Configuration) applied to the options
     fn apply_config<T>(&mut self, configuration: Ref<dyn Configuration>) -> OptionsBuilder<T>
     where
         T: Default + DeserializeOwned + 'static;
 
     /// Registers an options type that will have all of its associated services registered.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `configuration` - The [configuration](config::Configuration) applied to the options
     /// * `key` - The key to the part of the [configuration](config::Configuration) applied to the options
     fn apply_config_at<T>(
@@ -148,6 +148,25 @@ mod tests {
     }
 
     #[test]
+    fn apply_config_should_bind_configuration_section_to_options() {
+        // arrange
+        let config = DefaultConfigurationBuilder::new()
+            .add_in_memory(&[("Test:Enabled", "true")])
+            .build()
+            .unwrap();
+        let provider = ServiceCollection::new()
+            .apply_config::<TestOptions>(config.section("Test").as_config().into())
+            .build_provider()
+            .unwrap();
+
+        // act
+        let options = provider.get_required::<dyn Options<TestOptions>>();
+
+        // assert
+        assert!(options.value().enabled);
+    }
+
+    #[test]
     fn apply_config_at_should_bind_configuration_to_options() {
         // arrange
         let config = Ref::from(
@@ -192,7 +211,9 @@ mod tests {
             .unwrap();
 
         let token = config.reload_token();
-        let original = provider.get_required::<dyn OptionsMonitor<TestOptions>>().current_value();
+        let original = provider
+            .get_required::<dyn OptionsMonitor<TestOptions>>()
+            .current_value();
         let state = Arc::new((Mutex::new(false), Condvar::new()));
         let _unused = token.register(
             Box::new(|s| {
@@ -220,7 +241,9 @@ mod tests {
         }
 
         // act
-        let current = provider.get_required::<dyn OptionsMonitor<TestOptions>>().current_value();
+        let current = provider
+            .get_required::<dyn OptionsMonitor<TestOptions>>()
+            .current_value();
 
         // assert
         if path.exists() {
