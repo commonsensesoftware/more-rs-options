@@ -1,6 +1,6 @@
 [package]
 name = "more-options"
-version = "3.1.0"
+version = "3.2.0"
 edition = "2018"
 rust-version = "1.60"
 authors = ["Chris Martinez <chris.s.martinez@hotmail.com>"]
@@ -32,7 +32,7 @@ more-changetoken = "2.0"
 serde = { version = "1.0", optional = true }
 
 [dependencies.more-di]
-version = "3.0"
+version = "3.1"
 default-features = false
 features = ["builder"]
 optional = true
@@ -51,6 +51,6 @@ serde_json = "1.0"
 test-case = "2.2"
 
 [dev-dependencies.more-di]
-version = "3.0"
+version = "3.1"
 default-features = false
 features = ["builder"]
