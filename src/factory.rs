@@ -1,7 +1,8 @@
 use crate::*;
 
 /// Defines the behavior of an object that creates configuration [`Options`](crate::Options).
-pub trait OptionsFactory<T> {
+#[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
+pub trait OptionsFactory<T: Value> {
     /// Creates and returns new configuration options.
     ///
     /// # Arguments
@@ -12,13 +13,16 @@ pub trait OptionsFactory<T> {
 
 /// Represents the default factory used to create configuration [`Options`](crate::Options).
 #[derive(Default)]
-pub struct DefaultOptionsFactory<T: Default> {
+pub struct DefaultOptionsFactory<T: Value + Default> {
     configurations: Vec<Ref<dyn ConfigureOptions<T>>>,
     post_configurations: Vec<Ref<dyn PostConfigureOptions<T>>>,
     validations: Vec<Ref<dyn ValidateOptions<T>>>,
 }
 
-impl<T: Default> DefaultOptionsFactory<T> {
+unsafe impl<T: Send + Sync + Default> Send for DefaultOptionsFactory<T> {}
+unsafe impl<T: Send + Sync + Default> Sync for DefaultOptionsFactory<T> {}
+
+impl<T: Value + Default> DefaultOptionsFactory<T> {
     /// Initializes a new options factory.
     ///
     /// # Arguments
@@ -39,7 +43,7 @@ impl<T: Default> DefaultOptionsFactory<T> {
     }
 }
 
-impl<T: Default> OptionsFactory<T> for DefaultOptionsFactory<T> {
+impl<T: Value + Default> OptionsFactory<T> for DefaultOptionsFactory<T> {
     fn create(&self, name: Option<&str>) -> Result<T, ValidateOptionsResult> {
         let mut options = Default::default();
 

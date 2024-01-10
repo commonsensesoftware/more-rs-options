@@ -13,6 +13,23 @@ pub type Ref<T> = std::sync::Arc<T>;
 #[cfg(all(feature = "di", feature = "async"))]
 pub type Ref<T> = di::Ref<T>;
 
+// trait aliases are unstable so define a custom
+// marker that can bridge the gap
+//
+// REF: https://github.com/rust-lang/rust/issues/41517
+
+#[cfg(not(feature = "async"))]
+pub trait Value: Sized {}
+
+#[cfg(not(feature = "async"))]
+impl<T> Value for T {}
+
+#[cfg(feature = "async")]
+pub trait Value: Sized + Send + Sync {}
+
+#[cfg(feature = "async")]
+impl<T: Send + Sync> Value for T {}
+
 mod cache;
 mod configure;
 mod factory;

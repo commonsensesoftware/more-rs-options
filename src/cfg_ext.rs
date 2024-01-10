@@ -8,13 +8,16 @@ use tokens::ChangeToken;
 
 /// Represents a change token for monitored [`Options`](crate::Options) that are
 /// notified when configuration changes.
-pub struct ConfigurationChangeTokenSource<TOptions> {
+pub struct ConfigurationChangeTokenSource<T: Value> {
     name: Option<String>,
     configuration: Ref<dyn Configuration>,
-    _data: PhantomData<TOptions>,
+    _data: PhantomData<T>,
 }
 
-impl<TOptions> ConfigurationChangeTokenSource<TOptions> {
+unsafe impl<T: Send + Sync> Send for ConfigurationChangeTokenSource<T> {}
+unsafe impl<T: Send + Sync> Sync for ConfigurationChangeTokenSource<T> {}
+
+impl<T: Value> ConfigurationChangeTokenSource<T> {
     /// Initializes a new configuration change token source.
     ///
     /// # Arguments
@@ -30,7 +33,7 @@ impl<TOptions> ConfigurationChangeTokenSource<TOptions> {
     }
 }
 
-impl<TOptions> OptionsChangeTokenSource<TOptions> for ConfigurationChangeTokenSource<TOptions> {
+impl<T: Value> OptionsChangeTokenSource<T> for ConfigurationChangeTokenSource<T> {
     fn token(&self) -> Box<dyn ChangeToken> {
         self.configuration.reload_token()
     }
@@ -49,7 +52,7 @@ pub trait OptionsConfigurationServiceExtensions {
     /// * `configuration` - The [configuration](config::Configuration) applied to the options
     fn apply_config<T>(&mut self, configuration: Ref<dyn Configuration>) -> OptionsBuilder<T>
     where
-        T: Default + DeserializeOwned + 'static;
+        T: Value + Default + DeserializeOwned + 'static;
 
     /// Registers an options type that will have all of its associated services registered.
     ///
@@ -63,13 +66,13 @@ pub trait OptionsConfigurationServiceExtensions {
         key: impl AsRef<str>,
     ) -> OptionsBuilder<T>
     where
-        T: Default + DeserializeOwned + 'static;
+        T: Value + Default + DeserializeOwned + 'static;
 }
 
 impl OptionsConfigurationServiceExtensions for ServiceCollection {
     fn apply_config<T>(&mut self, configuration: Ref<dyn Configuration>) -> OptionsBuilder<T>
     where
-        T: Default + DeserializeOwned + 'static,
+        T: Value + Default + DeserializeOwned + 'static,
     {
         let source = Box::new(ConfigurationChangeTokenSource::<T>::new(
             None,
@@ -89,7 +92,7 @@ impl OptionsConfigurationServiceExtensions for ServiceCollection {
         key: impl AsRef<str>,
     ) -> OptionsBuilder<T>
     where
-        T: Default + DeserializeOwned + 'static,
+        T: Value + Default + DeserializeOwned + 'static,
     {
         let source = Box::new(ConfigurationChangeTokenSource::<T>::new(
             Some(key.as_ref()),

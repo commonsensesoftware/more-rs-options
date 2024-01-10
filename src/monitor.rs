@@ -1,4 +1,4 @@
-use crate::{OptionsChangeTokenSource, OptionsFactory, OptionsMonitorCache, Ref};
+use crate::{OptionsChangeTokenSource, OptionsFactory, OptionsMonitorCache, Ref, Value};
 use std::ops::Deref;
 use std::sync::{Arc, RwLock, Weak};
 
@@ -7,17 +7,21 @@ use std::sync::{Arc, RwLock, Weak};
 /// # Remarks
 ///
 /// When the subscription is dropped, the underlying callback is unsubscribed.
-pub struct Subscription<T>(Arc<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>);
+pub struct Subscription<T: Value>(Arc<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>);
 
-impl<T> Subscription<T> {
+impl<T: Value> Subscription<T> {
     /// Initializes a new change token registration.
     pub fn new(callback: Arc<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>) -> Self {
         Self(callback)
     }
 }
 
+unsafe impl<T: Send + Sync> Send for Subscription<T> {}
+unsafe impl<T: Send + Sync> Sync for Subscription<T> {}
+
 /// Defines the behavior for notifications when [`Options`](crate::Options) instances change.
-pub trait OptionsMonitor<T> {
+#[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
+pub trait OptionsMonitor<T: Value> {
     /// Returns the current instance with the default options name.
     fn current_value(&self) -> Ref<T> {
         self.get(None)
@@ -47,12 +51,12 @@ pub trait OptionsMonitor<T> {
 }
 
 /// Represents the default implementation for notifications when option instances change.
-pub struct DefaultOptionsMonitor<T> {
+pub struct DefaultOptionsMonitor<T: Value> {
     tracker: Arc<ChangeTracker<T>>,
     _subscriptions: Vec<Box<dyn tokens::Subscription>>,
 }
 
-impl<T: 'static> DefaultOptionsMonitor<T> {
+impl<T: Value + 'static> DefaultOptionsMonitor<T> {
     /// Initializes a new default options monitor.
     ///
     /// # Arguments
@@ -94,7 +98,10 @@ impl<T: 'static> DefaultOptionsMonitor<T> {
     }
 }
 
-impl<T> OptionsMonitor<T> for DefaultOptionsMonitor<T> {
+unsafe impl<T: Send + Sync> Send for DefaultOptionsMonitor<T> {}
+unsafe impl<T: Send + Sync> Sync for DefaultOptionsMonitor<T> {}
+
+impl<T: Value> OptionsMonitor<T> for DefaultOptionsMonitor<T> {
     fn get(&self, name: Option<&str>) -> Ref<T> {
         self.tracker.get(name)
     }
@@ -107,13 +114,13 @@ impl<T> OptionsMonitor<T> for DefaultOptionsMonitor<T> {
     }
 }
 
-struct ChangeTracker<T> {
+struct ChangeTracker<T: Value> {
     cache: Ref<dyn OptionsMonitorCache<T>>,
     factory: Ref<dyn OptionsFactory<T>>,
     listeners: RwLock<Vec<Weak<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>>>,
 }
 
-impl<T> ChangeTracker<T> {
+impl<T: Value> ChangeTracker<T> {
     fn new(cache: Ref<dyn OptionsMonitorCache<T>>, factory: Ref<dyn OptionsFactory<T>>) -> Self {
         Self {
             cache,
@@ -165,18 +172,18 @@ impl<T> ChangeTracker<T> {
     }
 }
 
-unsafe impl<T> Send for ChangeTracker<T> {}
-unsafe impl<T> Sync for ChangeTracker<T> {}
+unsafe impl<T: Value> Send for ChangeTracker<T> {}
+unsafe impl<T: Value> Sync for ChangeTracker<T> {}
 
-struct Producer<T>(Ref<dyn OptionsChangeTokenSource<T>>);
+struct Producer<T: Value>(Ref<dyn OptionsChangeTokenSource<T>>);
 
-impl<T> Producer<T> {
+impl<T: Value> Producer<T> {
     fn new(source: Ref<dyn OptionsChangeTokenSource<T>>) -> Self {
         Self(source)
     }
 }
 
-impl<T> Deref for Producer<T> {
+impl<T: Value> Deref for Producer<T> {
     type Target = dyn OptionsChangeTokenSource<T>;
 
     fn deref(&self) -> &Self::Target {
@@ -184,8 +191,8 @@ impl<T> Deref for Producer<T> {
     }
 }
 
-unsafe impl<T> Send for Producer<T> {}
-unsafe impl<T> Sync for Producer<T> {}
+unsafe impl<T: Value> Send for Producer<T> {}
+unsafe impl<T: Value> Sync for Producer<T> {}
 
 #[cfg(test)]
 mod tests {
