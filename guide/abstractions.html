@@ -1,0 +1,348 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Abstractions - More Options Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/custom.css">
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "ayu";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="../getting-started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li class="chapter-item expanded affix "><li class="part-title">Reference Guide</li><li class="chapter-item expanded "><a href="../guide/abstractions.html" class="active"><strong aria-hidden="true">2.</strong> Abstractions</a></li><li class="chapter-item expanded "><a href="../guide/validation.html"><strong aria-hidden="true">3.</strong> Validation</a></li><li class="chapter-item expanded "><a href="../guide/config.html"><strong aria-hidden="true">4.</strong> Configuration Binding</a></li><li class="chapter-item expanded "><a href="../guide/changes.html"><strong aria-hidden="true">5.</strong> Runtime Changes</a></li><li class="chapter-item expanded "><a href="../guide/di.html"><strong aria-hidden="true">6.</strong> Dependency Injection</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">More Options Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/commonsensesoftware/more-rs-options/tree/main/guide" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/commonsensesoftware/more-rs-options/edit/main/guide/src/guide/abstractions.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <!--
+This file contains links that can be shared across pages. RustDoc links cannot currently
+be used by mdBook directly. Links are stable on crates.io so we can centralize what is
+required in this file, albeit manually.
+
+REF: https://github.com/rust-lang/mdBook/issues/1356
+REF: https://github.com/rust-lang/cargo/issues/739
+REF: https://github.com/tag1consulting/goose/issues/320
+-->
+<h1 id="abstractions"><a class="header" href="#abstractions">Abstractions</a></h1>
+<p>The options framework contains a common set traits and behaviors for numerous scenarios.</p>
+<p><a href="https://docs.rs/more-options/3.2.0/options/type.Ref.html"><code>Ref</code></a> is a type alias depending on which features are enabled:</p>
+<ul>
+<li><em>default</em>: <code>options::Ref</code> → <code>std::rc::Rc</code></li>
+<li><strong>async</strong>: <code>options::Ref</code> → <code>std::sync::Arc</code></li>
+<li><strong>async</strong> + <strong>di</strong>: <code>options::Ref</code> → <code>di::Ref</code></li>
+</ul>
+<h2 id="options"><a class="header" href="#options">Options</a></h2>
+<pre><code class="language-rust">pub trait Options&lt;T&gt; {
+    fn value(&amp;self) -&gt; Ref&lt;T&gt;;
+}</code></pre>
+<ul>
+<li>Does <strong>not</strong> support:
+<ul>
+<li>Reading of configuration data after the application has started.</li>
+</ul>
+</li>
+<li>Is registered as a <a href="https://docs.rs/more-di/3.1.0/di/enum.ServiceLifetime.html#variant.Singleton"><code>Singleton</code></a> and can be injected into any service lifetime when using dependency injection.</li>
+</ul>
+<h2 id="options-snapshot"><a class="header" href="#options-snapshot">Options Snapshot</a></h2>
+<pre><code class="language-rust">pub trait OptionsSnapshot&lt;T&gt; {
+    fn get(&amp;self, name: Option&lt;&amp;str&gt;) -&gt; Ref&lt;T&gt;;
+}</code></pre>
+<ul>
+<li>Is useful in scenarios where options should be recomputed on every request.</li>
+<li>Is registered as <a href="https://docs.rs/more-di/3.1.0/di/enum.ServiceLifetime.html#variant.Scoped"><code>Scoped</code></a> and therefore can't be injected into a <a href="https://docs.rs/more-di/3.1.0/di/enum.ServiceLifetime.html#variant.Singleton"><code>Singleton</code></a> service when using dependency injection.</li>
+</ul>
+<h2 id="options-monitor"><a class="header" href="#options-monitor">Options Monitor</a></h2>
+<pre><code class="language-rust">pub trait OptionsMonitor&lt;T&gt; {
+    fn current_value(&amp;self) -&gt; Ref&lt;T&gt;;
+    fn get(&amp;self, name: Option&lt;&amp;str&gt;) -&gt; Ref&lt;T&gt;;
+    fn on_change(
+        &amp;self,
+        listener: Box&lt;dyn Fn(Option&lt;&amp;str&gt;, Ref&lt;T&gt;) + Send + Sync&gt;) -&gt; Subscription&lt;T&gt;;
+}</code></pre>
+<ul>
+<li>Is used to retrieve options and manage options notifications for <code>T</code> instances.</li>
+<li>Is registered as a <a href="https://docs.rs/more-di/3.1.0/di/enum.ServiceLifetime.html#variant.Singleton"><code>Singleton</code></a> and can be injected into any service lifetime when using dependency injection.</li>
+<li>Supports:
+<ul>
+<li>Change notifications</li>
+<li>Reloadable configuration</li>
+<li>Selective options invalidation (<a href="https://docs.rs/more-options/3.2.0/options/trait.OptionsMonitorCache.html"><code>OptionsMonitorCache</code></a>)</li>
+</ul>
+</li>
+</ul>
+<h2 id="options-monitor-cache"><a class="header" href="#options-monitor-cache">Options Monitor Cache</a></h2>
+<pre><code class="language-rust">pub trait OptionsMonitorCache&lt;T&gt; {
+    fn get_or_add(
+        &amp;self,
+        name: Option&lt;&amp;str&gt;,
+        create_options: &amp;dyn Fn(Option&lt;&amp;str&gt;) -&gt; T) -&gt; Ref&lt;T&gt;;
+    fn try_add(&amp;self, name: Option&lt;&amp;str&gt;, options: T) -&gt; bool;
+    fn try_remove(&amp;self, name: Option&lt;&amp;str&gt;) -&gt; bool;
+    fn clear(&amp;self);
+}</code></pre>
+<ul>
+<li>A cache of <code>T</code> instances.</li>
+<li>Handles invaliding monitored instances when underlying changes occur.</li>
+</ul>
+<h2 id="configure-options"><a class="header" href="#configure-options">Configure Options</a></h2>
+<pre><code class="language-rust">pub trait ConfigureOptions&lt;T&gt; {
+    fn configure(&amp;self, name: Option&lt;&amp;str&gt;, options: &amp;mut T);
+}</code></pre>
+<ul>
+<li>Configures options when they are being instantiated.</li>
+</ul>
+<h2 id="post-configure-options"><a class="header" href="#post-configure-options">Post-Configure Options</a></h2>
+<pre><code class="language-rust">pub trait PostConfigureOptions&lt;T&gt; {
+    fn post_configure(&amp;self, name: Option&lt;&amp;str&gt;, options: &amp;mut T);
+}</code></pre>
+<ul>
+<li>Configures options after they have been instantiated.</li>
+<li>Enable setting or changing options after all <a href="https://docs.rs/more-options/3.2.0/options/trait.ConfigureOptions.html"><code>ConfigureOptions</code></a> configuration occurs.</li>
+</ul>
+<h2 id="validate-options"><a class="header" href="#validate-options">Validate Options</a></h2>
+<pre><code class="language-rust">pub trait ValidateOptions&lt;T&gt; {
+    fn validate(&amp;self, name: Option&lt;&amp;str&gt;, options: &amp;T) -&gt; ValidateOptionsResult;
+}</code></pre>
+<ul>
+<li>Validates options after they have been instantiated and configured.</li>
+</ul>
+<h2 id="options-factory"><a class="header" href="#options-factory">Options Factory</a></h2>
+<pre><code class="language-rust">pub trait OptionsFactory&lt;T&gt; {
+    fn create(&amp;self, name: Option&lt;&amp;str&gt;) -&gt; Result&lt;T, ValidateOptionsResult&gt;;
+}</code></pre>
+<ul>
+<li>Responsible for creating new options instances.</li>
+<li>The default implementation run all configured instance of:
+<ul>
+<li><code>ConfigureOptions</code></li>
+<li><code>PostConfigureOptions</code></li>
+<li><code>ValidateOptions</code></li>
+</ul>
+</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../getting-started.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../guide/validation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../getting-started.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../guide/validation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace.js"></script>
+        <script src="../editor.js"></script>
+        <script src="../mode-rust.js"></script>
+        <script src="../theme-dawn.js"></script>
+        <script src="../theme-tomorrow_night.js"></script>
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

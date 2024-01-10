@@ -1,0 +1,385 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Dependency Injection - More Options Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/custom.css">
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "ayu";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="../getting-started.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li class="chapter-item expanded affix "><li class="part-title">Reference Guide</li><li class="chapter-item expanded "><a href="../guide/abstractions.html"><strong aria-hidden="true">2.</strong> Abstractions</a></li><li class="chapter-item expanded "><a href="../guide/validation.html"><strong aria-hidden="true">3.</strong> Validation</a></li><li class="chapter-item expanded "><a href="../guide/config.html"><strong aria-hidden="true">4.</strong> Configuration Binding</a></li><li class="chapter-item expanded "><a href="../guide/changes.html"><strong aria-hidden="true">5.</strong> Runtime Changes</a></li><li class="chapter-item expanded "><a href="../guide/di.html" class="active"><strong aria-hidden="true">6.</strong> Dependency Injection</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">More Options Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/commonsensesoftware/more-rs-options/tree/main/guide" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/commonsensesoftware/more-rs-options/edit/main/guide/src/guide/di.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <!--
+This file contains links that can be shared across pages. RustDoc links cannot currently
+be used by mdBook directly. Links are stable on crates.io so we can centralize what is
+required in this file, albeit manually.
+
+REF: https://github.com/rust-lang/mdBook/issues/1356
+REF: https://github.com/rust-lang/cargo/issues/739
+REF: https://github.com/tag1consulting/goose/issues/320
+-->
+<h1 id="dependency-injection"><a class="header" href="#dependency-injection">Dependency Injection</a></h1>
+<p>An alternative approach when using the options pattern is to bind an entire configuration or section of it through a dependency injection (DI) service container. Dependency injection extensions are provided by the <a href="https://crates.io/crates/more-di">more-di</a> crate.</p>
+<p>In the following code, <code>PositionOptions</code> is added to the service container with <a href="https://docs.rs/more-options/3.2.0/options/ext/trait.OptionsConfigurationServiceExtensions.html#method.apply_config"><code>apply_config</code></a> and bound to loaded configuration:</p>
+<pre><code class="language-rust">use config::{*, ext::*};
+use options::{Options, ext::*};
+use serde::Deserialize;
+use std::rc::Rc;
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all(deserialize = &quot;PascalCase&quot;))]
+pub struct PositionOptions {
+    pub title: String,
+    pub name: String,
+}
+
+pub TestModel {
+    options: Rc&lt;dyn Options&lt;Position&gt;&gt;
+}
+
+impl TestModel {
+    pub new(options: Rc&lt;dyn Options&lt;Position&gt;&gt;) -&gt; Self {
+        Self { options }
+    }
+
+    pub get(&amp;self) -&gt; String {
+        let value = self.options.value();
+        format!(&quot;Title: {}\nName: {}&quot;, value.title, value.name)
+    }
+}
+
+fn main() {
+    let config = Rc::from(
+        DefaultConfigurationBuilder::new()
+            .add_json_file(&quot;appsettings.json&quot;)
+            .build()
+            .unwrap()
+            .as_config(),
+    );
+    let provider = ServiceCollection::new()
+        .add(transient_as_self::&lt;TestModel&gt;())
+        .apply_config::&lt;PositionOptions&gt;(config)
+        .build_provider()
+        .unwrap();
+    let model = provider.get_required::&lt;TestModel&gt;();
+
+    println!(&quot;{}&quot;, model.get())
+}</code></pre>
+<h2 id="options-configuration"><a class="header" href="#options-configuration">Options Configuration</a></h2>
+<p>Services can be accessed from dependency injection while configuring options in two ways:</p>
+<ul>
+<li>Pass a configuration function</li>
+</ul>
+<pre><code class="language-rust">services.add_options::&lt;MyOptions&gt;()
+        .configure(|options| options.count = 1);
+services.configure_options::&lt;MyAltOptions&gt;(|options| options.count = 1);
+services.add_named_options::&lt;MyOtherOptions&gt;(&quot;name&quot;)
+        .configure5(
+            |options,
+            s2: Rc&lt;Service2&gt;,
+            s1: Rc&lt;Service1&gt;,
+            s3: Rc&lt;Service3&gt;,
+            s4: Rc&lt;Service4&gt;
+            s4: Rc&lt;Service5&gt;| {
+                options.property = do_something_with(s1, s2, s3, s4, s5);
+            });</code></pre>
+<ul>
+<li>Implement the <a href="https://docs.rs/more-options/3.2.0/options/trait.ConfigureOptions.html"><code>ConfigureOptions</code></a> trait and register it as a service</li>
+</ul>
+<p>It is recommended to pass a configuration closure to one of the <code>configure</code> functions since creating a struct is more complex. Creating a struct is equivalent to what the framework does when calling any of the <code>configure</code> functions. Calling one of the <code>configure</code> functions registers a transient <a href="https://docs.rs/more-options/3.2.0/options/trait.ConfigureOptions.html"><code>ConfigureOptions</code></a>, which initializes with the specified service types.</p>
+<div class="table-wrapper"><table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.configure"><code>configure</code></a></td><td>Configures the options without using any services</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.configure1"><code>configure1</code></a></td><td>Configures the options using a single dependency</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.configure2"><code>configure2</code></a></td><td>Configures the options using 2 dependencies</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.configure3"><code>configure3</code></a></td><td>Configures the options using 3 dependencies</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.configure4"><code>configure4</code></a></td><td>Configures the options using 4 dependencies</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.configure5"><code>configure5</code></a></td><td>Configures the options using 5 dependencies</td></tr>
+</tbody></table>
+</div>
+<h2 id="options-post-configuration"><a class="header" href="#options-post-configuration">Options Post-Configuration</a></h2>
+<p>Set post-configuration with <a href="https://docs.rs/more-options/3.2.0/options/trait.PostConfigureOptions.html"><code>PostConfigureOptions</code></a>. Post-configuration runs after all <a href="https://docs.rs/more-options/3.2.0/options/trait.ConfigureOptions.html"><code>ConfigureOptions</code></a> configuration occurs.</p>
+<p>Services can be accessed from dependency injection while configuring options in two ways:</p>
+<ul>
+<li>Pass a configuration function</li>
+</ul>
+<pre><code class="language-rust">services.add_options::&lt;MyOptions&gt;()
+        .post_configure(|options| options.count = 1);
+services.post_configure_options::&lt;MyAltOptions&gt;(|options| options.count = 1);
+services.add_named_options::&lt;MyOtherOptions&gt;(&quot;name&quot;)
+        .post_configure5(
+            |options,
+            s2: Rc&lt;Service2&gt;,
+            s1: Rc&lt;Service1&gt;,
+            s3: Rc&lt;Service3&gt;,
+            s4: Rc&lt;Service4&gt;
+            s4: Rc&lt;Service5&gt;| {
+                options.property = do_something_with(s1, s2, s3, s4, s5);
+            });</code></pre>
+<ul>
+<li>Implement the <a href="https://docs.rs/more-options/3.2.0/options/trait.PostConfigureOptions.html"><code>PostConfigureOptions</code></a> trait and register it as a service</li>
+</ul>
+<p><code>post_configure_options</code> applies to all instances. To apply a named configuration use <code>post_configure_named_options</code>. It is recommended to pass a configuration closure to one of the <code>post_configure</code> functions since creating a struct is more complex. Creating a struct is equivalent to what the framework does when calling any of the <code>post_configure</code> functions. Calling one of the <code>post_configure</code> functions registers a transient <a href="https://docs.rs/more-options/3.2.0/options/trait.PostConfigureOptions.html"><code>PostConfigureOptions</code></a>, which initializes with the specified service types.</p>
+<div class="table-wrapper"><table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.post_configure"><code>post_configure</code></a></td><td>Post-configures the options without using any services</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.post_configure1"><code>post_configure1</code></a></td><td>Post-configures the options using a single dependency</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.post_configure2"><code>post_configure2</code></a></td><td>Post-configures the options using 2 dependencies</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.post_configure3"><code>post_configure3</code></a></td><td>Post-configures the options using 3 dependencies</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.post_configure4"><code>post_configure4</code></a></td><td>Post-configures the options using 4 dependencies</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.post_configure5"><code>post_configure5</code></a></td><td>Post-configures the options using 5 dependencies</td></tr>
+</tbody></table>
+</div>
+<h2 id="options-validation"><a class="header" href="#options-validation">Options Validation</a></h2>
+<p>Validation is performed with <a href="https://docs.rs/more-options/3.2.0/options/trait.ValidateOptions.html"><code>ValidateOptions</code></a>. Validation runs after all <a href="https://docs.rs/more-options/3.2.0/options/trait.ConfigureOptions.html"><code>ConfigureOptions</code></a> and <a href="https://docs.rs/more-options/3.2.0/options/trait.PostConfigureOptions.html"><code>PostConfigureOptions</code></a> occurs.</p>
+<p>Services can be accessed from dependency injection while validating options in two ways:</p>
+<ul>
+<li>Pass a validation function</li>
+</ul>
+<pre><code class="language-rust">services.add_options::&lt;MyOptions&gt;()
+        .configure(|options| options.count = 1)
+        .validate(|options| options.count &gt; 0, &quot;Count must be greater than 0.&quot;);
+services.add_named_options::&lt;MyOtherOptions&gt;(&quot;name&quot;)
+        .configure(|options| options.count = 1)
+        .validate5(
+            |options,
+            s2: Rc&lt;Service2&gt;,
+            s1: Rc&lt;Service1&gt;,
+            s3: Rc&lt;Service3&gt;,
+            s4: Rc&lt;Service4&gt;
+            s4: Rc&lt;Service5&gt;| do_complex_validation(s1, s2, s3, s4, s5));</code></pre>
+<ul>
+<li>Implement the <a href="https://docs.rs/more-options/3.2.0/options/trait.ValidateOptions.html"><code>ValidateOptions</code></a> trait and register it as a service</li>
+</ul>
+<p>It is recommended to pass a validation closure to one of the <code>validate</code> functions since creating a struct is more complex. Creating a struct is equivalent to what the framework does when calling any of the <code>validate</code> functions. Calling one of the <code>validate</code> functions registers a transient <a href="https://docs.rs/more-options/3.2.0/options/trait.ValidateOptions.html"><code>ValidateOptions</code></a>, which initializes with the specified service types.</p>
+<div class="table-wrapper"><table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.validate"><code>validate</code></a></td><td>Validates the options without using any services</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.validate1"><code>validate1</code></a></td><td>Validates the options using a single dependency</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.validate2"><code>validate2</code></a></td><td>Validates the options using 2 dependencies</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.validate3"><code>validate3</code></a></td><td>Validates the options using 3 dependencies</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.validate4"><code>validate4</code></a></td><td>Validates the options using 4 dependencies</td></tr>
+<tr><td><a href="https://docs.rs/more-options/3.2.0/options/struct.OptionsBuilder.html#method.validate5"><code>validate5</code></a></td><td>Validates the options using 5 dependencies</td></tr>
+</tbody></table>
+</div>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../guide/changes.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../guide/changes.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace.js"></script>
+        <script src="../editor.js"></script>
+        <script src="../mode-rust.js"></script>
+        <script src="../theme-dawn.js"></script>
+        <script src="../theme-tomorrow_night.js"></script>
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
