@@ -1,9 +1,10 @@
-use crate::Ref;
+use crate::{Ref, Value};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
 /// Defines the behavior of an [`Options`](crate::Options) monitor cache.
-pub trait OptionsMonitorCache<T> {
+#[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
+pub trait OptionsMonitorCache<T: Value> {
     /// Gets or adds options with the specified name.
     ///
     /// # Arguments
@@ -44,7 +45,10 @@ impl<T> Default for OptionsCache<T> {
     }
 }
 
-impl<T> OptionsMonitorCache<T> for OptionsCache<T> {
+unsafe impl<T: Send + Sync> Send for OptionsCache<T> {}
+unsafe impl<T: Send + Sync> Sync for OptionsCache<T> {}
+
+impl<T: Value> OptionsMonitorCache<T> for OptionsCache<T> {
     fn get_or_add(&self, name: Option<&str>, create_options: &dyn Fn(Option<&str>) -> T) -> Ref<T> {
         let key = name.unwrap_or_default().to_string();
         self.cache
