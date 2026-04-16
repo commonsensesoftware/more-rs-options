@@ -67,7 +67,7 @@ pub use builder::*;
 #[cfg(any(feature = "di", feature = "cfg"))]
 pub mod ext {
     use super::*;
-    
+
     #[cfg(feature = "di")]
     #[cfg_attr(docsrs, doc(cfg(feature = "di")))]
     pub use di_ext::*;

@@ -38,15 +38,13 @@ pub struct OptionsCache<T> {
 }
 
 impl<T> Default for OptionsCache<T> {
+    #[inline]
     fn default() -> Self {
         Self {
             cache: Default::default(),
         }
     }
 }
-
-unsafe impl<T: Send + Sync> Send for OptionsCache<T> {}
-unsafe impl<T: Send + Sync> Sync for OptionsCache<T> {}
 
 impl<T: Value> OptionsMonitorCache<T> for OptionsCache<T> {
     fn get_or_add(&self, name: Option<&str>, create_options: &dyn Fn(Option<&str>) -> T) -> Ref<T> {

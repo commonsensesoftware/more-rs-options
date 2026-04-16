@@ -1,90 +1,103 @@
 use crate::*;
+use cfg_if::cfg_if;
 use di::{
     exactly_one, scoped, singleton, singleton_as_self, transient, transient_factory, zero_or_more,
     ServiceCollection, ServiceDescriptor, ServiceProvider,
 };
 
-/// Defines extension methods for the [`ServiceCollection`](di::ServiceCollection) struct.
-pub trait OptionsServiceExtensions {
-    /// Registers an options type that will have all of its associated services registered.
-    fn add_options<T: Value + Default + 'static>(&mut self) -> OptionsBuilder<T>;
+macro_rules! opts_ext {
+    (($($bounds:tt)+)) => {
+        /// Defines extension methods for the [`ServiceCollection`](di::ServiceCollection) struct.
+        pub trait OptionsServiceExtensions {
+            /// Registers an options type that will have all of its associated services registered.
+            fn add_options<T: Value + Default + 'static>(&mut self) -> OptionsBuilder<'_, T>;
 
-    /// Registers an options type that will have all of its associated services registered.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The name associated with the options
-    fn add_named_options<T: Value + Default + 'static>(
-        &mut self,
-        name: impl AsRef<str>,
-    ) -> OptionsBuilder<T>;
+            /// Registers an options type that will have all of its associated services registered.
+            ///
+            /// # Arguments
+            ///
+            /// * `name` - The name associated with the options
+            fn add_named_options<T: Value + Default + 'static>(
+                &mut self,
+                name: impl AsRef<str>,
+            ) -> OptionsBuilder<'_, T>;
 
-    /// Registers an options type that will have all of its associated services registered.
-    ///
-    /// # Arguments
-    ///
-    /// * `factory` - The function used to create the associated options factory
-    fn add_options_with<T, F>(&mut self, factory: F) -> OptionsBuilder<T>
-    where
-        T: Value,
-        F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + 'static;
+            /// Registers an options type that will have all of its associated services registered.
+            ///
+            /// # Arguments
+            ///
+            /// * `factory` - The function used to create the associated options factory
+            fn add_options_with<T, F>(&mut self, factory: F) -> OptionsBuilder<'_, T>
+            where
+                T: Value,
+                F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + $($bounds)+;
 
-    /// Registers an options type that will have all of its associated services registered.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The name associated with the options
-    /// * `factory` - The function used to create the associated options factory
-    fn add_named_options_with<T, F>(
-        &mut self,
-        name: impl AsRef<str>,
-        factory: F,
-    ) -> OptionsBuilder<T>
-    where
-        T: Value,
-        F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + 'static;
+            /// Registers an options type that will have all of its associated services registered.
+            ///
+            /// # Arguments
+            ///
+            /// * `name` - The name associated with the options
+            /// * `factory` - The function used to create the associated options factory
+            fn add_named_options_with<T, F>(
+                &mut self,
+                name: impl AsRef<str>,
+                factory: F,
+            ) -> OptionsBuilder<'_, T>
+            where
+                T: Value,
+                F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + $($bounds)+;
 
-    /// Registers an action used to initialize a particular type of configuration options.
-    ///
-    /// # Arguments
-    ///
-    /// * `setup` - The setup action used to configure options.
-    fn configure_options<T, F>(&mut self, setup: F) -> &mut Self
-    where
-        T: Value + Default + 'static,
-        F: Fn(&mut T) + 'static;
+            /// Registers an action used to initialize a particular type of configuration options.
+            ///
+            /// # Arguments
+            ///
+            /// * `setup` - The setup action used to configure options.
+            fn configure_options<T, F>(&mut self, setup: F) -> &mut Self
+            where
+                T: Value + Default + 'static,
+                F: Fn(&mut T) + $($bounds)+;
 
-    /// Registers an action used to initialize a particular type of configuration options.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The name associated with the options
-    /// * `setup` - The setup action used to configure options
-    fn configure_named_options<T, F>(&mut self, name: impl AsRef<str>, setup: F) -> &mut Self
-    where
-        T: Value + Default + 'static,
-        F: Fn(&mut T) + 'static;
+            /// Registers an action used to initialize a particular type of configuration options.
+            ///
+            /// # Arguments
+            ///
+            /// * `name` - The name associated with the options
+            /// * `setup` - The setup action used to configure options
+            fn configure_named_options<T, F>(
+                &mut self,
+                name: impl AsRef<str>,
+                setup: F,
+            ) -> &mut Self
+            where
+                T: Value + Default + 'static,
+                F: Fn(&mut T) + $($bounds)+;
 
-    /// Registers an action used to initialize a particular type of configuration options.
-    ///
-    /// # Arguments
-    ///
-    /// * `setup` - The setup action used to configure options
-    fn post_configure_options<T, F>(&mut self, setup: F) -> &mut Self
-    where
-        T: Value + Default + 'static,
-        F: Fn(&mut T) + 'static;
+            /// Registers an action used to initialize a particular type of configuration options.
+            ///
+            /// # Arguments
+            ///
+            /// * `setup` - The setup action used to configure options
+            fn post_configure_options<T, F>(&mut self, setup: F) -> &mut Self
+            where
+                T: Value + Default + 'static,
+                F: Fn(&mut T) + $($bounds)+;
 
-    /// Registers an action used to initialize a particular type of configuration options.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - The name associated with the options
-    /// * `setup` - The setup action used to configure options
-    fn post_configure_named_options<T, F>(&mut self, name: impl AsRef<str>, setup: F) -> &mut Self
-    where
-        T: Value + Default + 'static,
-        F: Fn(&mut T) + 'static;
+            /// Registers an action used to initialize a particular type of configuration options.
+            ///
+            /// # Arguments
+            ///
+            /// * `name` - The name associated with the options
+            /// * `setup` - The setup action used to configure options
+            fn post_configure_named_options<T, F>(
+                &mut self,
+                name: impl AsRef<str>,
+                setup: F,
+            ) -> &mut Self
+            where
+                T: Value + Default + 'static,
+                F: Fn(&mut T) + $($bounds)+;
+        }
+    };
 }
 
 fn _add_options<'a, T: Value>(
@@ -134,101 +147,128 @@ fn _add_options<'a, T: Value>(
     OptionsBuilder::new(services, name)
 }
 
-impl OptionsServiceExtensions for ServiceCollection {
-    fn add_options<T: Value + Default + 'static>(&mut self) -> OptionsBuilder<T> {
-        let descriptor = transient::<dyn OptionsFactory<T>, DefaultOptionsFactory<T>>()
-            .depends_on(zero_or_more::<dyn ConfigureOptions<T>>())
-            .depends_on(zero_or_more::<dyn PostConfigureOptions<T>>())
-            .depends_on(zero_or_more::<dyn ValidateOptions<T>>())
-            .from(|sp| {
-                Ref::new(DefaultOptionsFactory::new(
-                    sp.get_all::<dyn ConfigureOptions<T>>().collect(),
-                    sp.get_all::<dyn PostConfigureOptions<T>>().collect(),
-                    sp.get_all::<dyn ValidateOptions<T>>().collect(),
-                ))
-            });
+macro_rules! opts_ext_impl {
+    (($($bounds:tt)+)) => {
+        impl OptionsServiceExtensions for ServiceCollection {
+            fn add_options<T: Value + Default + 'static>(&mut self) -> OptionsBuilder<'_, T> {
+                let descriptor = transient::<dyn OptionsFactory<T>, DefaultOptionsFactory<T>>()
+                    .depends_on(zero_or_more::<dyn ConfigureOptions<T>>())
+                    .depends_on(zero_or_more::<dyn PostConfigureOptions<T>>())
+                    .depends_on(zero_or_more::<dyn ValidateOptions<T>>())
+                    .from(|sp| {
+                        Ref::new(DefaultOptionsFactory::new(
+                            sp.get_all::<dyn ConfigureOptions<T>>().collect(),
+                            sp.get_all::<dyn PostConfigureOptions<T>>().collect(),
+                            sp.get_all::<dyn ValidateOptions<T>>().collect(),
+                        ))
+                    });
 
-        _add_options(self, None, descriptor)
-    }
+                _add_options(self, None, descriptor)
+            }
 
-    fn add_named_options<T: Value + Default + 'static>(
-        &mut self,
-        name: impl AsRef<str>,
-    ) -> OptionsBuilder<T> {
-        let descriptor = transient::<dyn OptionsFactory<T>, DefaultOptionsFactory<T>>()
-            .depends_on(zero_or_more::<dyn ConfigureOptions<T>>())
-            .depends_on(zero_or_more::<dyn PostConfigureOptions<T>>())
-            .depends_on(zero_or_more::<dyn ValidateOptions<T>>())
-            .from(|sp| {
-                Ref::new(DefaultOptionsFactory::new(
-                    sp.get_all::<dyn ConfigureOptions<T>>().collect(),
-                    sp.get_all::<dyn PostConfigureOptions<T>>().collect(),
-                    sp.get_all::<dyn ValidateOptions<T>>().collect(),
-                ))
-            });
+            fn add_named_options<T: Value + Default + 'static>(
+                &mut self,
+                name: impl AsRef<str>,
+            ) -> OptionsBuilder<'_, T> {
+                let descriptor = transient::<dyn OptionsFactory<T>, DefaultOptionsFactory<T>>()
+                    .depends_on(zero_or_more::<dyn ConfigureOptions<T>>())
+                    .depends_on(zero_or_more::<dyn PostConfigureOptions<T>>())
+                    .depends_on(zero_or_more::<dyn ValidateOptions<T>>())
+                    .from(|sp| {
+                        Ref::new(DefaultOptionsFactory::new(
+                            sp.get_all::<dyn ConfigureOptions<T>>().collect(),
+                            sp.get_all::<dyn PostConfigureOptions<T>>().collect(),
+                            sp.get_all::<dyn ValidateOptions<T>>().collect(),
+                        ))
+                    });
 
-        _add_options(self, Some(name.as_ref()), descriptor)
-    }
+                _add_options(self, Some(name.as_ref()), descriptor)
+            }
 
-    fn add_options_with<T, F>(&mut self, factory: F) -> OptionsBuilder<T>
-    where
-        T: Value,
-        F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + 'static,
-    {
-        _add_options(self, None, transient_factory(factory))
-    }
+            #[inline]
+            fn add_options_with<T, F>(&mut self, factory: F) -> OptionsBuilder<'_, T>
+            where
+                T: Value,
+                F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + $($bounds)+,
+            {
+                _add_options(self, None, transient_factory(factory))
+            }
 
-    fn add_named_options_with<T, F>(
-        &mut self,
-        name: impl AsRef<str>,
-        factory: F,
-    ) -> OptionsBuilder<T>
-    where
-        T: Value,
-        F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + 'static,
-    {
-        _add_options(self, Some(name.as_ref()), transient_factory(factory))
-    }
+            #[inline]
+            fn add_named_options_with<T, F>(
+                &mut self,
+                name: impl AsRef<str>,
+                factory: F,
+            ) -> OptionsBuilder<'_, T>
+            where
+                T: Value,
+                F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + $($bounds)+,
+            {
+                _add_options(self, Some(name.as_ref()), transient_factory(factory))
+            }
 
-    fn configure_options<T, F>(&mut self, setup: F) -> &mut Self
-    where
-        T: Value + Default + 'static,
-        F: Fn(&mut T) + 'static,
-    {
-        self.add_options().configure(setup).into()
-    }
+            #[inline]
+            fn configure_options<T, F>(&mut self, setup: F) -> &mut Self
+            where
+                T: Value + Default + 'static,
+                F: Fn(&mut T) + $($bounds)+,
+            {
+                self.add_options().configure(setup).into()
+            }
 
-    fn configure_named_options<T, F>(&mut self, name: impl AsRef<str>, setup: F) -> &mut Self
-    where
-        T: Value + Default + 'static,
-        F: Fn(&mut T) + 'static,
-    {
-        self.add_named_options(name).configure(setup).into()
-    }
+            #[inline]
+            fn configure_named_options<T, F>(
+                &mut self,
+                name: impl AsRef<str>,
+                setup: F,
+            ) -> &mut Self
+            where
+                T: Value + Default + 'static,
+                F: Fn(&mut T) + $($bounds)+,
+            {
+                self.add_named_options(name).configure(setup).into()
+            }
 
-    fn post_configure_options<T, F>(&mut self, setup: F) -> &mut Self
-    where
-        T: Value + Default + 'static,
-        F: Fn(&mut T) + 'static,
-    {
-        self.add_options().post_configure(setup).into()
-    }
+            #[inline]
+            fn post_configure_options<T, F>(&mut self, setup: F) -> &mut Self
+            where
+                T: Value + Default + 'static,
+                F: Fn(&mut T) + $($bounds)+,
+            {
+                self.add_options().post_configure(setup).into()
+            }
 
-    fn post_configure_named_options<T, F>(&mut self, name: impl AsRef<str>, setup: F) -> &mut Self
-    where
-        T: Value + Default + 'static,
-        F: Fn(&mut T) + 'static,
-    {
-        self.add_named_options(name).configure(setup).into()
+            #[inline]
+            fn post_configure_named_options<T, F>(
+                &mut self,
+                name: impl AsRef<str>,
+                setup: F,
+            ) -> &mut Self
+            where
+                T: Value + Default + 'static,
+                F: Fn(&mut T) + $($bounds)+,
+            {
+                self.add_named_options(name).configure(setup).into()
+            }
+        }
+    };
+}
+
+cfg_if! {
+    if #[cfg(feature = "async")] {
+        opts_ext!((Send + Sync + 'static));
+        opts_ext_impl!((Send + Sync + 'static));
+    } else {
+        opts_ext!(('static));
+        opts_ext_impl!(('static));
     }
 }
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use di::{existing_as_self, transient};
-    use std::cell::Cell;
+    use std::sync::RwLock;
 
     #[derive(Default, Debug, PartialEq, Eq)]
     struct TestOptions {
@@ -250,23 +290,26 @@ mod tests {
     }
 
     struct TestService {
-        value: Cell<usize>,
+        value: RwLock<usize>,
     }
 
     impl TestService {
         fn next(&self) -> usize {
-            self.value.replace(self.value.get() + 1)
+            let mut value = self.value.write().unwrap();
+            let current = *value;
+            *value += 1;
+            current
         }
 
         fn calls(&self) -> usize {
-            self.value.get() - 1
+            *self.value.read().unwrap() - 1
         }
     }
 
     impl Default for TestService {
         fn default() -> Self {
             Self {
-                value: Cell::new(1),
+                value: RwLock::new(1),
             }
         }
     }

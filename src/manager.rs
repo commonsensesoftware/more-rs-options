@@ -14,6 +14,7 @@ impl<T: Value> OptionsManager<T> {
     /// # Arguments
     ///
     /// * `factory` - The [factory](crate::OptionsFactory) used to create new options.
+    #[inline]
     pub fn new(factory: Ref<dyn OptionsFactory<T>>) -> Self {
         Self {
             factory,
@@ -22,16 +23,15 @@ impl<T: Value> OptionsManager<T> {
     }
 }
 
-unsafe impl<T: Send + Sync> Send for OptionsManager<T> {}
-unsafe impl<T: Send + Sync> Sync for OptionsManager<T> {}
-
 impl<T: Value> Options<T> for OptionsManager<T> {
+    #[inline]
     fn value(&self) -> Ref<T> {
         self.get(None)
     }
 }
 
 impl<T: Value> OptionsSnapshot<T> for OptionsManager<T> {
+    #[inline]
     fn get(&self, name: Option<&str>) -> Ref<T> {
         self.cache
             .get_or_add(name, &|n| self.factory.create(n).unwrap())
