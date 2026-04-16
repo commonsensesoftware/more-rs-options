@@ -2,22 +2,22 @@ use crate::{OptionsChangeTokenSource, OptionsFactory, OptionsMonitorCache, Ref, 
 use std::ops::Deref;
 use std::sync::{Arc, RwLock, Weak};
 
+type Callback<T> = dyn Fn(Option<&str>, Ref<T>) + Send + Sync;
+
 /// Represents a change subscription.
 ///
 /// # Remarks
 ///
 /// When the subscription is dropped, the underlying callback is unsubscribed.
-pub struct Subscription<T: Value>(Arc<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>);
+pub struct Subscription<T: Value>(#[allow(unused)] Arc<Callback<T>>);
 
 impl<T: Value> Subscription<T> {
     /// Initializes a new change token registration.
-    pub fn new(callback: Arc<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>) -> Self {
+    #[inline]
+    pub fn new(callback: Arc<Callback<T>>) -> Self {
         Self(callback)
     }
 }
-
-unsafe impl<T: Send + Sync> Send for Subscription<T> {}
-unsafe impl<T: Send + Sync> Sync for Subscription<T> {}
 
 /// Defines the behavior for notifications when [`Options`](crate::Options) instances change.
 #[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
@@ -38,16 +38,13 @@ pub trait OptionsMonitor<T: Value> {
     ///
     /// # Arguments
     ///
-    /// * `listener` - The callback function to invoke
+    /// * `changed` - The callback function to invoke
     ///
     /// # Returns
     ///
     /// A change subscription for the specified options. When the subscription is dropped, no further
     /// notifications will be propagated.
-    fn on_change(
-        &self,
-        listener: Box<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>,
-    ) -> Subscription<T>;
+    fn on_change(&self, changed: Box<Callback<T>>) -> Subscription<T>;
 }
 
 /// Represents the default implementation for notifications when option instances change.
@@ -102,25 +99,25 @@ unsafe impl<T: Send + Sync> Send for DefaultOptionsMonitor<T> {}
 unsafe impl<T: Send + Sync> Sync for DefaultOptionsMonitor<T> {}
 
 impl<T: Value> OptionsMonitor<T> for DefaultOptionsMonitor<T> {
+    #[inline]
     fn get(&self, name: Option<&str>) -> Ref<T> {
         self.tracker.get(name)
     }
 
-    fn on_change(
-        &self,
-        listener: Box<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>,
-    ) -> Subscription<T> {
-        self.tracker.add(listener)
+    #[inline]
+    fn on_change(&self, changed: Box<Callback<T>>) -> Subscription<T> {
+        self.tracker.add(changed)
     }
 }
 
 struct ChangeTracker<T: Value> {
     cache: Ref<dyn OptionsMonitorCache<T>>,
     factory: Ref<dyn OptionsFactory<T>>,
-    listeners: RwLock<Vec<Weak<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>>>,
+    listeners: RwLock<Vec<Weak<Callback<T>>>>,
 }
 
 impl<T: Value> ChangeTracker<T> {
+    #[inline]
     fn new(cache: Ref<dyn OptionsMonitorCache<T>>, factory: Ref<dyn OptionsFactory<T>>) -> Self {
         Self {
             cache,
@@ -129,12 +126,13 @@ impl<T: Value> ChangeTracker<T> {
         }
     }
 
+    #[inline]
     fn get(&self, name: Option<&str>) -> Ref<T> {
         self.cache
             .get_or_add(name, &|n| self.factory.create(n).unwrap())
     }
 
-    fn add(&self, listener: Box<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>) -> Subscription<T> {
+    fn add(&self, listener: Box<Callback<T>>) -> Subscription<T> {
         let mut listeners = self.listeners.write().unwrap();
 
         // writes are much infrequent and we already need to escalate
@@ -145,7 +143,7 @@ impl<T: Value> ChangeTracker<T> {
             }
         }
 
-        let source: Arc<dyn Fn(Option<&str>, Ref<T>) + Send + Sync> = Arc::from(listener);
+        let source: Arc<Callback<T>> = Arc::from(listener);
 
         listeners.push(Arc::downgrade(&source));
         Subscription::new(source)
@@ -178,6 +176,7 @@ unsafe impl<T: Value> Sync for ChangeTracker<T> {}
 struct Producer<T: Value>(Ref<dyn OptionsChangeTokenSource<T>>);
 
 impl<T: Value> Producer<T> {
+    #[inline]
     fn new(source: Ref<dyn OptionsChangeTokenSource<T>>) -> Self {
         Self(source)
     }
@@ -186,6 +185,7 @@ impl<T: Value> Producer<T> {
 impl<T: Value> Deref for Producer<T> {
     type Target = dyn OptionsChangeTokenSource<T>;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         self.0.deref()
     }

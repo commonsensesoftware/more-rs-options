@@ -19,9 +19,6 @@ pub struct DefaultOptionsFactory<T: Value + Default> {
     validations: Vec<Ref<dyn ValidateOptions<T>>>,
 }
 
-unsafe impl<T: Send + Sync + Default> Send for DefaultOptionsFactory<T> {}
-unsafe impl<T: Send + Sync + Default> Sync for DefaultOptionsFactory<T> {}
-
 impl<T: Value + Default> DefaultOptionsFactory<T> {
     /// Initializes a new options factory.
     ///

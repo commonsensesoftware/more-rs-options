@@ -90,6 +90,7 @@ impl Display for ValidateOptionsResult {
 }
 
 /// Defines the behavior of an object that validates configuration options.
+#[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
 pub trait ValidateOptions<T> {
     /// Validates named options or all options if no name is specified.
     ///

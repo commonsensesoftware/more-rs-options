@@ -12,6 +12,7 @@ pub trait Options<T: Value> {
 /// # Arguments
 ///
 /// * `options` - The options value to wrap.
+#[inline]
 pub fn create<T: Value>(options: T) -> impl Options<T> {
     OptionsWrapper(Ref::new(options))
 }
@@ -19,10 +20,8 @@ pub fn create<T: Value>(options: T) -> impl Options<T> {
 struct OptionsWrapper<T: Value>(Ref<T>);
 
 impl<T: Value> Options<T> for OptionsWrapper<T> {
+    #[inline]
     fn value(&self) -> Ref<T> {
         self.0.clone()
     }
 }
-
-unsafe impl<T: Send + Sync> Send for OptionsWrapper<T> {}
-unsafe impl<T: Send + Sync> Sync for OptionsWrapper<T> {}

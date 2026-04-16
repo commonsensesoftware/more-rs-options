@@ -1,6 +1,6 @@
 [package]
 name = "more-options"
-version = "3.3.0"
+version = "3.4.0"
 edition = "2018"
 rust-version = "1.60"
 authors = ["Chris Martinez <chris.s.martinez@hotmail.com>"]
@@ -10,7 +10,6 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://commonsensesoftware.github.io/more-rs-options/"
 repository = "https://github.com/commonsensesoftware/more-rs-options"
-include = ["src/*.rs", "README.md"]
 
 # RUSTDOCFLAGS="--cfg docsrs"; cargo +nightly doc
 [package.metadata.docs.rs]
@@ -23,17 +22,18 @@ path = "src/lib.rs"
 doctest = false
 
 [features]
-di = ["more-di"]
-cfg = ["di", "more-config", "serde"]
-async = ["more-di?/async", "maybe-impl"]
+di = ["dep:more-di"]
+cfg = ["di", "dep:more-config", "dep:serde"]
+async = ["more-config?/async", "more-di?/async", "dep:maybe-impl"]
 
 [dependencies]
+cfg-if = "1.0"
 more-changetoken = "2.0"
 serde = { version = "1.0", optional = true }
 maybe-impl = { version = "0.1.0", optional = true }
 
 [dependencies.more-di]
-version = "3.1"
+version = "3.2"
 default-features = false
 features = ["builder"]
 optional = true
@@ -50,8 +50,3 @@ more-options = { path = ".", features = ["cfg"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 test-case = "2.2"
-
-[dev-dependencies.more-di]
-version = "3.1"
-default-features = false
-features = ["builder"]
