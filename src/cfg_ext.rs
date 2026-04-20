@@ -74,12 +74,8 @@ impl OptionsConfigurationServiceExtensions for ServiceCollection {
     where
         T: Value + Default + DeserializeOwned + 'static,
     {
-        let source = Box::new(ConfigurationChangeTokenSource::<T>::new(
-            None,
-            configuration.clone(),
-        ));
-        let descriptor =
-            existing::<dyn OptionsChangeTokenSource<T>, ConfigurationChangeTokenSource<T>>(source);
+        let source = Box::new(ConfigurationChangeTokenSource::<T>::new(None, configuration.clone()));
+        let descriptor = existing::<dyn OptionsChangeTokenSource<T>, ConfigurationChangeTokenSource<T>>(source);
 
         self.add(descriptor)
             .add_options()
@@ -98,8 +94,7 @@ impl OptionsConfigurationServiceExtensions for ServiceCollection {
             Some(key.as_ref()),
             configuration.clone(),
         ));
-        let descriptor =
-            existing::<dyn OptionsChangeTokenSource<T>, ConfigurationChangeTokenSource<T>>(source);
+        let descriptor = existing::<dyn OptionsChangeTokenSource<T>, ConfigurationChangeTokenSource<T>>(source);
         let key = key.as_ref().to_owned();
 
         self.add(descriptor)
@@ -237,10 +232,7 @@ mod tests {
         let mut reloaded = mutex.lock().unwrap();
 
         while !*reloaded {
-            reloaded = event
-                .wait_timeout(reloaded, Duration::from_secs(1))
-                .unwrap()
-                .0;
+            reloaded = event.wait_timeout(reloaded, Duration::from_secs(1)).unwrap().0;
         }
 
         // act

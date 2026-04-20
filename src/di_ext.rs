@@ -1,8 +1,8 @@
 use crate::*;
 use cfg_if::cfg_if;
 use di::{
-    exactly_one, scoped, singleton, singleton_as_self, transient, transient_factory, zero_or_more,
-    ServiceCollection, ServiceDescriptor, ServiceProvider,
+    exactly_one, scoped, singleton, singleton_as_self, transient, transient_factory, zero_or_more, ServiceCollection,
+    ServiceDescriptor, ServiceProvider,
 };
 
 macro_rules! opts_ext {
@@ -109,11 +109,7 @@ fn _add_options<'a, T: Value>(
         .try_add(
             singleton_as_self::<OptionsManager<T>>()
                 .depends_on(exactly_one::<dyn OptionsFactory<T>>())
-                .from(|sp| {
-                    Ref::new(OptionsManager::new(
-                        sp.get_required::<dyn OptionsFactory<T>>(),
-                    ))
-                }),
+                .from(|sp| Ref::new(OptionsManager::new(sp.get_required::<dyn OptionsFactory<T>>()))),
         )
         .try_add(
             singleton::<dyn Options<T>, OptionsManager<T>>()
@@ -140,8 +136,7 @@ fn _add_options<'a, T: Value>(
         )
         .try_add(descriptor)
         .try_add(
-            singleton::<dyn OptionsMonitorCache<T>, OptionsCache<T>>()
-                .from(|_| Ref::new(OptionsCache::default())),
+            singleton::<dyn OptionsMonitorCache<T>, OptionsCache<T>>().from(|_| Ref::new(OptionsCache::default())),
         );
 
     OptionsBuilder::new(services, name)
@@ -308,9 +303,7 @@ mod tests {
 
     impl Default for TestService {
         fn default() -> Self {
-            Self {
-                value: RwLock::new(1),
-            }
+            Self { value: RwLock::new(1) }
         }
     }
 
@@ -445,9 +438,7 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
-            .configure2(|o, d1: Ref<TestService>, d2: Ref<TestService>| {
-                o.setting = d1.next() + d2.next()
-            })
+            .configure2(|o, d1: Ref<TestService>, d2: Ref<TestService>| o.setting = d1.next() + d2.next())
             .add(existing_as_self(TestService::default()))
             .build_provider()
             .unwrap();
@@ -464,11 +455,9 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
-            .configure3(
-                |o, d1: Ref<TestService>, d2: Ref<TestService>, d3: Ref<TestService>| {
-                    o.setting = d1.next() + d2.next() + d3.next()
-                },
-            )
+            .configure3(|o, d1: Ref<TestService>, d2: Ref<TestService>, d3: Ref<TestService>| {
+                o.setting = d1.next() + d2.next() + d3.next()
+            })
             .add(existing_as_self(TestService::default()))
             .build_provider()
             .unwrap();
@@ -486,11 +475,7 @@ mod tests {
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
             .configure4(
-                |o,
-                 d1: Ref<TestService>,
-                 d2: Ref<TestService>,
-                 d3: Ref<TestService>,
-                 d4: Ref<TestService>| {
+                |o, d1: Ref<TestService>, d2: Ref<TestService>, d3: Ref<TestService>, d4: Ref<TestService>| {
                     o.setting = d1.next() + d2.next() + d3.next() + d4.next()
                 },
             )
@@ -553,9 +538,7 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
-            .post_configure2(|o, d1: Ref<TestService>, d2: Ref<TestService>| {
-                o.setting = d1.next() + d2.next()
-            })
+            .post_configure2(|o, d1: Ref<TestService>, d2: Ref<TestService>| o.setting = d1.next() + d2.next())
             .add(existing_as_self(TestService::default()))
             .build_provider()
             .unwrap();
@@ -572,11 +555,9 @@ mod tests {
         // arrange
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
-            .post_configure3(
-                |o, d1: Ref<TestService>, d2: Ref<TestService>, d3: Ref<TestService>| {
-                    o.setting = d1.next() + d2.next() + d3.next()
-                },
-            )
+            .post_configure3(|o, d1: Ref<TestService>, d2: Ref<TestService>, d3: Ref<TestService>| {
+                o.setting = d1.next() + d2.next() + d3.next()
+            })
             .add(existing_as_self(TestService::default()))
             .build_provider()
             .unwrap();
@@ -594,11 +575,7 @@ mod tests {
         let provider = ServiceCollection::new()
             .add_options::<TestOptions>()
             .post_configure4(
-                |o,
-                 d1: Ref<TestService>,
-                 d2: Ref<TestService>,
-                 d3: Ref<TestService>,
-                 d4: Ref<TestService>| {
+                |o, d1: Ref<TestService>, d2: Ref<TestService>, d3: Ref<TestService>, d4: Ref<TestService>| {
                     o.setting = d1.next() + d2.next() + d3.next() + d4.next()
                 },
             )
@@ -724,11 +701,7 @@ mod tests {
             .add_options::<TestOptions>()
             .configure(|o| o.enabled = true)
             .validate4(
-                |o,
-                 d1: Ref<TestService>,
-                 d2: Ref<TestService>,
-                 d3: Ref<TestService>,
-                 d4: Ref<TestService>| {
+                |o, d1: Ref<TestService>, d2: Ref<TestService>, d3: Ref<TestService>, d4: Ref<TestService>| {
                     let _ = d1.next() + d2.next() + d3.next() + d4.next();
                     o.enabled
                 },

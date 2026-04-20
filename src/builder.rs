@@ -1,6 +1,4 @@
-use crate::{
-    ConfigureOptions, PostConfigureOptions, Ref, ValidateOptions, ValidateOptionsResult, Value,
-};
+use crate::{ConfigureOptions, PostConfigureOptions, Ref, ValidateOptions, ValidateOptionsResult, Value};
 use cfg_if::cfg_if;
 use di::{singleton_factory, transient_factory, Ref as Svc, ServiceCollection};
 use std::marker::PhantomData;
@@ -622,8 +620,7 @@ fn names_equal(name: Option<&str>, other_name: Option<&str>) -> bool {
     let name2 = other_name.unwrap();
 
     (name1.len() == name2.len())
-        && ((name1.to_uppercase() == name2.to_uppercase())
-            || (name1.to_lowercase() == name2.to_lowercase()))
+        && ((name1.to_uppercase() == name2.to_uppercase()) || (name1.to_lowercase() == name2.to_lowercase()))
 }
 
 fn message_or_default<T: AsRef<str>>(message: T) -> String {
