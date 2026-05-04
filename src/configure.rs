@@ -2,7 +2,7 @@ use crate::Value;
 use cfg_if::cfg_if;
 use std::marker::PhantomData;
 
-/// Defines the behavior of something that configures [`Options`](crate::Options).
+/// Defines the behavior of something that configures [options](crate::Options).
 ///
 /// # Remarks
 ///
@@ -18,7 +18,7 @@ pub trait ConfigureOptions<T> {
     fn configure(&self, name: Option<&str>, options: &mut T);
 }
 
-/// Defines the behavior of something that configures [`Options`](crate::Options).
+/// Defines the behavior of something that configures [options](crate::Options).
 ///
 /// # Remarks
 ///

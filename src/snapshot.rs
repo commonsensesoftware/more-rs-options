@@ -1,6 +1,6 @@
 use crate::{Ref, Value};
 
-/// Defines the behavior for a snapshot of configuration [`Options`](crate::Options).
+/// Defines the behavior for a snapshot of configuration [options](crate::Options).
 #[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
 pub trait OptionsSnapshot<T: Value> {
     /// Gets the configuration options with the specified name.

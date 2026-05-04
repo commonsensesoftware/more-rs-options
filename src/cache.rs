@@ -2,7 +2,7 @@ use crate::{Ref, Value};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-/// Defines the behavior of an [`Options`](crate::Options) monitor cache.
+/// Defines the behavior of an [options](crate::Options) monitor cache.
 #[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
 pub trait OptionsMonitorCache<T: Value> {
     /// Gets or adds options with the specified name.
@@ -10,8 +10,8 @@ pub trait OptionsMonitorCache<T: Value> {
     /// # Arguments
     ///
     /// * `name` - The optional name of the options
-    /// * `create_options` - The function used to create options when added
-    fn get_or_add(&self, name: Option<&str>, create_options: &dyn Fn(Option<&str>) -> T) -> Ref<T>;
+    /// * `create` - The function used to create options when added
+    fn get_or_add(&self, name: Option<&str>, create: &dyn Fn(Option<&str>) -> T) -> Ref<T>;
 
     /// Attempts to add options with the specified name.
     ///
@@ -33,33 +33,29 @@ pub trait OptionsMonitorCache<T: Value> {
 }
 
 /// Represents a cache for configured options.
-pub struct OptionsCache<T> {
-    cache: Mutex<HashMap<String, Ref<T>>>,
-}
+pub struct OptionsCache<T>(Mutex<HashMap<String, Ref<T>>>);
 
 impl<T> Default for OptionsCache<T> {
     #[inline]
     fn default() -> Self {
-        Self {
-            cache: Default::default(),
-        }
+        Self(Default::default())
     }
 }
 
 impl<T: Value> OptionsMonitorCache<T> for OptionsCache<T> {
-    fn get_or_add(&self, name: Option<&str>, create_options: &dyn Fn(Option<&str>) -> T) -> Ref<T> {
+    fn get_or_add(&self, name: Option<&str>, create: &dyn Fn(Option<&str>) -> T) -> Ref<T> {
         let key = name.unwrap_or_default().to_string();
-        self.cache
+        self.0
             .lock()
             .unwrap()
             .entry(key)
-            .or_insert_with(|| Ref::new(create_options(name)))
+            .or_insert_with(|| Ref::new(create(name)))
             .clone()
     }
 
     fn try_add(&self, name: Option<&str>, options: T) -> bool {
         let key = name.unwrap_or_default();
-        let mut cache = self.cache.lock().unwrap();
+        let mut cache = self.0.lock().unwrap();
 
         if cache.contains_key(key) {
             false
@@ -71,10 +67,11 @@ impl<T: Value> OptionsMonitorCache<T> for OptionsCache<T> {
 
     fn try_remove(&self, name: Option<&str>) -> bool {
         let key = name.unwrap_or_default();
-        self.cache.lock().unwrap().remove(key).is_some()
+        self.0.lock().unwrap().remove(key).is_some()
     }
 
+    #[inline]
     fn clear(&self) {
-        self.cache.lock().unwrap().clear()
+        self.0.lock().unwrap().clear()
     }
 }

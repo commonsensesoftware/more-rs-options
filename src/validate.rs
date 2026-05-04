@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Result as FormatResult};
 
-/// Represents the result of [`Options`](crate::Options) validation.
+/// Represents the result of [Options](crate::Options) validation.
 #[derive(Clone, Debug)]
 pub struct ValidateOptionsResult {
     succeeded: bool,
@@ -103,7 +103,6 @@ pub trait ValidateOptions<T> {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
