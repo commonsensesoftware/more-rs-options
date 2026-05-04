@@ -1,6 +1,6 @@
-use crate::*;
+use crate::{ConfigureOptions, PostConfigureOptions, Ref, ValidateOptions, ValidateOptionsResult, Value};
 
-/// Defines the behavior of an object that creates configuration [`Options`](crate::Options).
+/// Defines the behavior of an object that creates configuration [options](crate::Options).
 #[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
 pub trait OptionsFactory<T: Value> {
     /// Creates and returns new configuration options.
@@ -11,7 +11,7 @@ pub trait OptionsFactory<T: Value> {
     fn create(&self, name: Option<&str>) -> Result<T, ValidateOptionsResult>;
 }
 
-/// Represents the default factory used to create configuration [`Options`](crate::Options).
+/// Represents the default factory used to create configuration [options](crate::Options).
 #[derive(Default)]
 pub struct DefaultOptionsFactory<T: Value + Default> {
     configurations: Vec<Ref<dyn ConfigureOptions<T>>>,
@@ -24,9 +24,9 @@ impl<T: Value + Default> DefaultOptionsFactory<T> {
     ///
     /// # Arguments
     ///
-    /// * `configurations` - The configurations used to [configure options](crate::ConfigureOptions).
-    /// * `post_configurations` - The configurations used to [post-configure options](crate::PostConfigureOptions).
-    /// * `validations` - The validations used to [validate options](crate::ValidateOptions).
+    /// * `configurations` - The configurations used to [configure options](ConfigureOptions)
+    /// * `post_configurations` - The configurations used to [post-configure options](PostConfigureOptions)
+    /// * `validations` - The validations used to [validate options](ValidateOptions)
     pub fn new(
         configurations: Vec<Ref<dyn ConfigureOptions<T>>>,
         post_configurations: Vec<Ref<dyn PostConfigureOptions<T>>>,

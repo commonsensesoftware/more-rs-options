@@ -30,7 +30,7 @@ impl<T: Value> Subscription<T> {
     }
 }
 
-/// Defines the behavior for notifications when [`Options`](crate::Options) instances change.
+/// Defines the behavior for notifications when [options](crate::Options) instances change.
 #[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
 pub trait OptionsMonitor<T: Value> {
     /// Returns the current instance with the default options name.
@@ -53,8 +53,8 @@ pub trait OptionsMonitor<T: Value> {
     ///
     /// # Returns
     ///
-    /// A change subscription for the specified options. When the subscription is dropped, no further
-    /// notifications will be propagated.
+    /// A change subscription for the specified options. When the subscription is dropped, no further notifications
+    /// will be propagated.
     fn on_change(&self, changed: Box<Callback<T>>) -> Subscription<T>;
 }
 
@@ -480,7 +480,7 @@ mod tests {
     #[test]
     fn get_none_returns_factory_created_value() {
         // arrange
-        let (monitor, source, _setup) = new_monitor();
+        let (monitor, source, _) = new_monitor();
 
         let first = monitor.get(None);
         assert_eq!(first.retries, 1);
@@ -500,14 +500,13 @@ mod tests {
     #[test]
     fn on_change_callbacks_fire_with_correct_name_and_value() {
         // arrange
-        let (monitor, source, _setup) = new_monitor();
+        let (monitor, source, _) = new_monitor();
         let _ = monitor.get(None);
         let observed_name: Arc<Mutex<Option<Option<String>>>> = Arc::new(Mutex::new(None));
         let observed_retries: Arc<Mutex<Option<u8>>> = Arc::new(Mutex::new(None));
         let name_clone = observed_name.clone();
         let retries_clone = observed_retries.clone();
-
-        let _sub = monitor.on_change(Box::new(move |name: Option<&str>, opts: Ref<Config>| {
+        let _sub = monitor.on_change(Box::new(move |name, opts| {
             *name_clone.lock().unwrap() = Some(name.map(|s| s.to_owned()));
             *retries_clone.lock().unwrap() = Some(opts.retries);
         }));
@@ -537,7 +536,7 @@ mod tests {
         let _ = monitor.get(None);
         let call_count = Arc::new(AtomicU32::new(0));
         let count_clone = call_count.clone();
-        let sub = monitor.on_change(Box::new(move |_name: Option<&str>, _opts: Ref<Config>| {
+        let sub = monitor.on_change(Box::new(move |_, _| {
             count_clone.fetch_add(1, Ordering::SeqCst);
         }));
 
@@ -586,7 +585,7 @@ mod tests {
 
         let callback_names: Arc<Mutex<Vec<Option<String>>>> = Arc::new(Mutex::new(Vec::new()));
         let names_clone = callback_names.clone();
-        let _sub = monitor.on_change(Box::new(move |name: Option<&str>, _opts: Ref<Config>| {
+        let _sub = monitor.on_change(Box::new(move |name, _| {
             names_clone.lock().unwrap().push(name.map(|s| s.to_owned()));
         }));
 
