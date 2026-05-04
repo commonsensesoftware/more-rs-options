@@ -4,7 +4,7 @@
 
 The options framework contains a common set traits and behaviors for numerous scenarios.
 
-[`Ref`] is a type alias depending on which features are enabled:
+[Ref] is a type alias depending on which features are enabled:
 
 - _default_: `options::Ref` → `std::rc::Rc`
 - **async**: `options::Ref` → `std::sync::Arc`
@@ -20,7 +20,7 @@ pub trait Options<T> {
 
 - Does **not** support:
     - Reading of configuration data after the application has started.
-- Is registered as a [`Singleton`] and can be injected into any service lifetime when using dependency injection.
+- Is registered as a [Singleton] and can be injected into any service lifetime when using dependency injection.
 
 ## Options Snapshot
 
@@ -31,7 +31,7 @@ pub trait OptionsSnapshot<T> {
 ```
 
 - Is useful in scenarios where options should be recomputed on every request.
-- Is registered as [`Scoped`] and therefore can't be injected into a [`Singleton`] service when using dependency injection.
+- Is registered as [Scoped] and therefore can't be injected into a [Singleton] service when using dependency injection.
 
 ## Options Monitor
 
@@ -46,11 +46,11 @@ pub trait OptionsMonitor<T> {
 ```
 
 - Is used to retrieve options and manage options notifications for `T` instances.
-- Is registered as a [`Singleton`] and can be injected into any service lifetime when using dependency injection.
+- Is registered as a [Singleton] and can be injected into any service lifetime when using dependency injection.
 - Supports:
   - Change notifications
   - Reloadable configuration
-  - Selective options invalidation ([`OptionsMonitorCache`])
+  - Selective options invalidation ([OptionsMonitorCache])
 
 ## Options Monitor Cache
 
@@ -88,7 +88,7 @@ pub trait PostConfigureOptions<T> {
 ```
 
 - Configures options after they have been instantiated.
-- Enable setting or changing options after all [`ConfigureOptions`] configuration occurs.
+- Enable setting or changing options after all [ConfigureOptions] configuration occurs.
 
 ## Validate Options
 

@@ -27,21 +27,20 @@ pub struct PositionOptions {
 An options struct:
 
 - must be public.
-- should implement the `Default` trait; otherwise a custom [`OptionsFactory`] is required.
+- should implement the `Default` trait; otherwise a custom [OptionsFactory] is required.
 - binds public read-write fields.
 
 The following code:
 
-- calls [`ConfigurationBinder::bind`] to bind the `PositionOptions` class to the `"Position"` section.
+- calls [Binder::bind] to bind the `PositionOptions` class to the `"Position"` section.
 - displays the `Position` configuration data.
 - requires the **binder** feature to be enabled
   - which transitively enables the **serde** feature
 
 ```rust
-use config::*;
+use config::prelude::*;
 
 #[derive(Default, Deserialize)]
-#[serde(rename_all(deserialize = "PascalCase"))]
 pub struct PositionOptions {
     pub title: String,
     pub name: String,
@@ -64,23 +63,24 @@ impl<'a> TestModel<'a> {
 }
 ```
 
-[`ConfigurationBinder::reify`] binds and returns the specified type. [`ConfigurationBinder::reify`] may be more convenient than using [`ConfigurationBinder::bind`]. The following code shows how to use [`ConfigurationBinder::reify`] with the `PositionOptions` struct:
+[Binder::reify] binds and returns the specified type. [Binder::reify] may be more convenient than using
+[Binder::bind]. The following code shows how to use [Binder::reify] with the `PositionOptions` struct:
 
 ```rust
-use config::*;
+use config::prelude::*;
 
 pub TestModel<'a> {
-    config: &'a dyn Configuration
+  config: &'a dyn Configuration
 }
 
 impl<'a> TestModel<'a> {
-    pub new(config: &dyn Configuration) -> Self {
-        Self { config }
-    }
+  pub new(config: &dyn Configuration) -> Self {
+    Self { config }
+  }
 
-    pub get(&self) -> String {
-        let options: PositionOptions = self.config.section("Position").reify();
-        format!("Title: {}\nName: {}", options.title, options.name)
-    }
+  pub get(&self) -> String {
+    let options: PositionOptions = self.config.section("Position").reify().unwrap();
+    format!("Title: {}\nName: {}", options.title, options.name)
+  }
 }
 ```
