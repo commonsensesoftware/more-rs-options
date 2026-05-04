@@ -1,3 +1,4 @@
+use super::OptionsBuilder;
 use crate::*;
 use cfg_if::cfg_if;
 use di::{
@@ -7,8 +8,8 @@ use di::{
 
 macro_rules! opts_ext {
     (($($bounds:tt)+)) => {
-        /// Defines extension methods for the [`ServiceCollection`](di::ServiceCollection) struct.
-        pub trait OptionsServiceExtensions {
+        /// Defines extension methods for the [ServiceCollection](::di::ServiceCollection) struct.
+        pub trait OptionsExt {
             /// Registers an options type that will have all of its associated services registered.
             fn add_options<T: Value + Default + 'static>(&mut self) -> OptionsBuilder<'_, T>;
 
@@ -144,7 +145,7 @@ fn _add_options<'a, T: Value>(
 
 macro_rules! opts_ext_impl {
     (($($bounds:tt)+)) => {
-        impl OptionsServiceExtensions for ServiceCollection {
+        impl OptionsExt for ServiceCollection {
             fn add_options<T: Value + Default + 'static>(&mut self) -> OptionsBuilder<'_, T> {
                 let descriptor = transient::<dyn OptionsFactory<T>, DefaultOptionsFactory<T>>()
                     .depends_on(zero_or_more::<dyn ConfigureOptions<T>>())

@@ -4,7 +4,7 @@ use di::{singleton_factory, transient_factory, Ref as Svc, ServiceCollection};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
-/// Represents a builder used to configure [`Options`](crate::Options).
+/// Represents a builder used to configure [options](crate::Options).
 pub struct OptionsBuilder<'a, T: 'static> {
     name: Option<String>,
     services: &'a mut ServiceCollection,
