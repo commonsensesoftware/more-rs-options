@@ -40,14 +40,9 @@ mod snapshot;
 mod token;
 mod validate;
 
-#[cfg(feature = "di")]
-mod di_ext;
-
-#[cfg(feature = "di")]
-mod builder;
-
-#[cfg(feature = "cfg")]
-mod cfg_ext;
+/// Contains the library prelude.
+#[cfg(any(feature = "di", feature = "cfg"))]
+pub mod prelude;
 
 pub use cache::*;
 pub use configure::*;
@@ -58,21 +53,3 @@ pub use option::*;
 pub use snapshot::*;
 pub use token::*;
 pub use validate::*;
-
-#[cfg(feature = "di")]
-#[cfg_attr(docsrs, doc(cfg(feature = "di")))]
-pub use builder::*;
-
-/// Contains options extension methods.
-#[cfg(any(feature = "di", feature = "cfg"))]
-pub mod ext {
-    use super::*;
-
-    #[cfg(feature = "di")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "di")))]
-    pub use di_ext::*;
-
-    #[cfg(feature = "cfg")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "cfg")))]
-    pub use cfg_ext::*;
-}
