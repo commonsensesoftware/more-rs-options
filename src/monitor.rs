@@ -1,4 +1,4 @@
-use crate::{ChangeTokenSource, Factory, MonitorCache, Ref, Value, validation::Error};
+use crate::{validation::Error, ChangeTokenSource, Factory, MonitorCache, Ref, Value};
 use cfg_if::cfg_if;
 use std::sync::{Arc, RwLock, Weak};
 
@@ -39,7 +39,7 @@ pub trait Monitor<T: Value> {
     }
 
     /// Gets the default, unnamed configuration options.
-    /// 
+    ///
     /// # Remarks
     ///
     /// This function panics if the configuration options could not be successfully retrieved.

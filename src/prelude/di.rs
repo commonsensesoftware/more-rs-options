@@ -18,6 +18,10 @@ macro_rules! opts_ext {
             /// # Arguments
             ///
             /// * `name` - The name associated with the options
+            ///
+            /// # Remarks
+            ///
+            /// Names are matched using case-insensitive ASCII characters.
             fn add_named_options<T: Value + Default + 'static>(
                 &mut self,
                 name: impl AsRef<str>,
@@ -39,6 +43,10 @@ macro_rules! opts_ext {
             ///
             /// * `name` - The name associated with the options
             /// * `factory` - The function used to create the associated options factory
+            ///
+            /// # Remarks
+            ///
+            /// Names are matched using case-insensitive ASCII characters.
             fn add_named_options_with<T, F>(
                 &mut self,
                 name: impl AsRef<str>,
@@ -64,6 +72,10 @@ macro_rules! opts_ext {
             ///
             /// * `name` - The name associated with the options
             /// * `setup` - The setup action used to configure options
+            ///
+            /// # Remarks
+            ///
+            /// Names are matched using case-insensitive ASCII characters.
             fn configure_named_options<T, F>(
                 &mut self,
                 name: impl AsRef<str>,
@@ -89,6 +101,10 @@ macro_rules! opts_ext {
             ///
             /// * `name` - The name associated with the options
             /// * `setup` - The setup action used to configure options
+            ///
+            /// # Remarks
+            ///
+            /// Names are matched using case-insensitive ASCII characters.
             fn post_configure_named_options<T, F>(
                 &mut self,
                 name: impl AsRef<str>,

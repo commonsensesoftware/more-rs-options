@@ -19,6 +19,10 @@ impl<'a, T: 'static> Builder<'a, T> {
     ///
     /// * `services` - The associated [collection of services](di::ServiceCollection)
     /// * `name` - The optional name associated with the options
+    ///
+    /// # Remarks
+    ///
+    /// Names are matched using case-insensitive ASCII characters.
     #[inline]
     pub fn new(services: &'a mut ServiceCollection, name: &str) -> Self {
         Self {

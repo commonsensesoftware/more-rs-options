@@ -1,4 +1,4 @@
-use crate::{Ref, Value, validation::Error};
+use crate::{validation::Error, Ref, Value};
 
 /// Defines the behavior for a snapshot of configuration options.
 #[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
@@ -9,7 +9,7 @@ pub trait Snapshot<T: Value> {
     }
 
     /// Gets the default, unnamed configuration options.
-    /// 
+    ///
     /// # Remarks
     ///
     /// This function panics if the configuration options could not be successfully retrieved.
@@ -19,7 +19,7 @@ pub trait Snapshot<T: Value> {
             Err(error) => panic!("{}", error),
         }
     }
-    
+
     /// Gets the configuration options with the specified name.
     ///
     /// # Arguments
