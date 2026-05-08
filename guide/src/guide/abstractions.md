@@ -12,11 +12,7 @@ The options framework contains a common set traits and behaviors for numerous sc
 
 ## Options
 
-```rust
-pub trait Options<T> {
-    fn value(&self) -> Ref<T>;
-}
-```
+Any Rust `struct` that represents configurable options.
 
 - Does **not** support:
     - Reading of configuration data after the application has started.
@@ -25,8 +21,11 @@ pub trait Options<T> {
 ## Options Snapshot
 
 ```rust
-pub trait OptionsSnapshot<T> {
-    fn get(&self, name: Option<&str>) -> Ref<T>;
+pub trait Snapshot<T> {
+    fn get(&self) -> Result<Ref<T>, validation::Error>;
+    fn get_unchecked(&self) -> Ref<T>;
+    fn get_named(&self, name: &str) -> Result<Ref<T>, validation::Error>;
+    fn get_named_unchecked(&self, name: &str) -> Ref<T>;
 }
 ```
 
@@ -36,12 +35,14 @@ pub trait OptionsSnapshot<T> {
 ## Options Monitor
 
 ```rust
-pub trait OptionsMonitor<T> {
-    fn current_value(&self) -> Ref<T>;
-    fn get(&self, name: Option<&str>) -> Ref<T>;
+pub trait Monitor<T> {
+    fn get(&self) -> Result<Ref<T>, validation::Error>;
+    fn get_unchecked(&self) -> Ref<T>;
+    fn get_named(&self, name: &str) -> Result<Ref<T>, validation::Error>;
+    fn get_named_unchecked(&self, name: &str) -> Ref<T>;
     fn on_change(
         &self,
-        listener: Box<dyn Fn(Option<&str>, Ref<T>) + Send + Sync>) -> Subscription<T>;
+        callback: Box<dyn Fn(&str, Ref<T>) + Send + Sync>) -> Subscription<T>;
 }
 ```
 
@@ -50,7 +51,7 @@ pub trait OptionsMonitor<T> {
 - Supports:
   - Change notifications
   - Reloadable configuration
-  - Selective options invalidation ([OptionsMonitorCache])
+  - Selective options invalidation ([MonitorCache])
 
 ## Options Monitor Cache
 
@@ -58,10 +59,11 @@ pub trait OptionsMonitor<T> {
 pub trait OptionsMonitorCache<T> {
     fn get_or_add(
         &self,
-        name: Option<&str>,
-        create_options: &dyn Fn(Option<&str>) -> T) -> Ref<T>;
-    fn try_add(&self, name: Option<&str>, options: T) -> bool;
-    fn try_remove(&self, name: Option<&str>) -> bool;
+        name: &str,
+        create: &dyn Fn(&str) -> Result<T, validation::Error>)
+        -> Result<Ref<T>, validation::Error>;
+    fn try_add(&self, name: &str, options: T) -> bool;
+    fn try_remove(&self, name: &str) -> bool;
     fn clear(&self);
 }
 ```
@@ -72,44 +74,49 @@ pub trait OptionsMonitorCache<T> {
 ## Configure Options
 
 ```rust
-pub trait ConfigureOptions<T> {
-    fn configure(&self, name: Option<&str>, options: &mut T);
+pub trait Configure<T> {
+    fn run(&self, name: &str, options: &mut T);
 }
 ```
 
 - Configures options when they are being instantiated.
+- Can be implemented directly or maps to compatible closures.
 
 ## Post-Configure Options
 
 ```rust
-pub trait PostConfigureOptions<T> {
-    fn post_configure(&self, name: Option<&str>, options: &mut T);
+pub trait PostConfigure<T> {
+    fn run(&self, name: &str, options: &mut T);
 }
 ```
 
 - Configures options after they have been instantiated.
-- Enable setting or changing options after all [ConfigureOptions] configuration occurs.
+- Can be implemented directly or maps to compatible closures.
+- Enable setting or changing options after all [Configure] operations occur.
 
 ## Validate Options
 
+Validation is part of the `validation` module.
+
 ```rust
-pub trait ValidateOptions<T> {
-    fn validate(&self, name: Option<&str>, options: &T) -> ValidateOptionsResult;
+pub trait Validate<T> {
+    fn run(&self, name: &str, options: &T) -> Result;
 }
 ```
 
 - Validates options after they have been instantiated and configured.
+- Can be implemented directly or maps to compatible closures.
 
 ## Options Factory
 
 ```rust
-pub trait OptionsFactory<T> {
-    fn create(&self, name: Option<&str>) -> Result<T, ValidateOptionsResult>;
+pub trait Factory<T> {
+    fn create(&self, name: &str) -> Result<T, validation::Error>;
 }
 ```
 
 - Responsible for creating new options instances.
 - The default implementation run all configured instance of:
-  - `ConfigureOptions`
-  - `PostConfigureOptions`
-  - `ValidateOptions`
+  - `Configure`
+  - `PostConfigure`
+  - `Validate`

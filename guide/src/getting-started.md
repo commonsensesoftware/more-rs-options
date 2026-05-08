@@ -25,34 +25,31 @@ pub struct SpeechSettings {
 }
 
 pub struct Person {
-    speech: Rc<dyn Options<SpeechSettings>>,
+    speech: Rc<SpeechSettings>,
 }
 
 impl Person {
     pub fn speak(&self) -> &str {
-        &self.speech.value().text
+        &self.speech.text
     }
 }
 ```
 
-You may be wondering why you need `Rc` or the [Options] trait. In many practical applications, you'll have a group of
-immutable settings which will be used in many places. `Rc` (or `Arc`) allows a single instance of settings to be shared
-throughout the application. You can also use the [Ref] type alias to switch between them depending on whether the
-**async** feature is enabled. The [Options] trait provides a level of indirection to realizing the settings. Options
-might be _expensive_ to create or may come from an external source, such as a file, that should be differed until the
-settings will be used. In advanced scenarios, resolving the backed options instance may even change when an underlying
-configuration source, such as a file, changes.
+You may be wondering why you need `Rc`. In many practical applications, you'll have a group of immutable settings which
+will be used in many places. `Rc` (or `Arc`) allows a single instance of settings to be shared throughout the
+application. You can also use the [Ref] type alias to switch between them depending on whether the **async** feature is
+enabled.
 
-Now that we have some settings, we can put it together in a simple application.
+Now that we have some options, we can put it together in a simple application.
 
 ```rust
 use crate::options;
 
 fn main() {
-    let options = options::create(SpeechSettings {
+    let options = SpeechSettings {
         text: "Hello world!".into(),
         language: "en".into(),
-    });
+    };
     let person = Person { speech: options.into() };
 
     println!("{}", person.speak());

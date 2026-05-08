@@ -27,7 +27,7 @@ pub struct PositionOptions {
 An options struct:
 
 - must be public.
-- should implement the `Default` trait; otherwise a custom [OptionsFactory] is required.
+- should implement the `Default` trait; otherwise a custom options [Factory] is required.
 - binds public read-write fields.
 
 The following code:
@@ -57,7 +57,7 @@ impl<'a> TestModel<'a> {
 
     pub get(&self) -> String {
         let mut options = PositionOptions::default();
-        let section = self.config.section("Position").bind(&mut options);
+        let section = self.config.section("Position").bind_unchecked(&mut options);
         format!("Title: {}\nName: {}", options.title, options.name)
     }
 }
@@ -79,7 +79,7 @@ impl<'a> TestModel<'a> {
   }
 
   pub get(&self) -> String {
-    let options: PositionOptions = self.config.section("Position").reify().unwrap();
+    let options: PositionOptions = self.config.section("Position").reify_unchecked();
     format!("Title: {}\nName: {}", options.title, options.name)
   }
 }

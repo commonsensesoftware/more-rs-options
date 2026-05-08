@@ -2,8 +2,8 @@
 
 # Validation
 
-Options validation enables configured option values to be validated. Validation is performed via [ValidateOptions],
-which is typically invoked during options construction through [OptionsFactory] rather than imperatively.
+Options validation enables configured option values to be validated. Validation is performed via [Validate],
+which is typically invoked during options construction through an options [Factory] rather than imperatively.
 
 Consider the following `appsettings.json` file:
 
@@ -31,7 +31,7 @@ pub struct MyConfigOptions {
 The following code:
 
 - uses dependency injection (DI).
-- calls [add_options] to get an [OptionsBuilder] that binds to the `MyConfigOptions` struct.
+- calls [add_options] to get an [Builder] that binds to the `MyConfigOptions` struct.
 - invokes a closure to validate the struct.
 
 ```rust
@@ -56,24 +56,20 @@ fn main() -> Result<(), Box<dyn Error + 'static>> {
 Dependency injection is not required to enforce validation, but it is the simplest and fastest way to compose all of the
 necessary pieces together.
 
-## Implementing `ValidateOptions`
+## Implementing `Validate`
 
-[ValidateOptions] enables moving the validation code out of a closure and into a struct. The following struct implements
-[ValidateOptions]:
+[Validate] enables moving the validation code out of a closure and into a struct. The following struct implements
+[Validate]:
 
 ```rust
 use di::injectable;
-use options::{ValidationOptions, ValidationOptionsResult};
+use options::validation::{self, Result, Validate};
 
-#[injectable(ValidationOptions<MyConfigOptions>)]
+#[injectable(Validate<MyConfigOptions>)]
 struct MyConfigValidation;
 
-impl ValidationOptions<MyConfigOptions> for MyConfigValidation {
-    fn validate(
-        &self,
-        name: Option<&str>,
-        options: &MyConfigOptions) -> ValidateOptionsResult
-    {
+impl Validate<MyConfigOptions> for MyConfigValidation {
+    fn run(&self, name: &str, options: &MyConfigOptions) -> Result {
         let failures = Vec::default();
 
         if options.key2 < 0 || options.key2 > 1000 {
@@ -85,9 +81,9 @@ impl ValidationOptions<MyConfigOptions> for MyConfigValidation {
         }
 
         if failures.is_empty() {
-            ValidationOptionsResult::success()
+            validation::success()
         } else {
-            ValidationOptionsResult::fail_many(failures)
+            Err(validation::Error::many(failures))
         }
     }
 }
@@ -107,22 +103,22 @@ fn main() -> Result<(), Box<dyn Error + 'static>> {
         .apply_config_at::<MyConfigOptions>(config, "MyOptions")
         .add(MyConfigValidation::transient())
         .build_provider()?;
-    let options = provider.get_required::<dyn Options<MyConfigOptions>>();
+    let options = provider.get_required::<MyConfigOptions>();
 
-    println!("Key1 = {}", &options.value().key1);
+    println!("Key1 = {}", options.key1);
     Ok(())
 }
 ```
 
 Order of operation:
 
-1. Register options services, including [OptionsFactory], via [apply_config_at]
-2. Register `MyConfigValidation` as [ValidationOptions]
+1. Register options services, including an options [Factory] via [apply_config_at]
+2. Register `MyConfigValidation` as options [Validate]
 3. Enforce validation through
    1. [ServiceProvider::get_required], which calls
-   2. [OptionsFactory], which calls
-   3. `MyConfigValidation::validate`
-   4. [Options::value] returns a valid `MyConfigOptions` or panics
+   2. [Factory], which calls
+   3. `MyConfigValidation::run`
+   4. A valid `MyConfigOptions` is returned or panics
 
->A panic is an unfortunate, current limitation of resolution from DI. For validation not to not panic, the injected
->service would need to be `Result<Ref<dyn Options<MyConfigOptions>>, _>`, which is possible, but not ergonomic.
+>A panic is an unfortunate, current limitation of resolution from DI. For validation not to panic, the injected service
+>would need to be `Result<di::Ref<MyConfigOptions>, validation::Error>`, which is possible, but not ergonomic.
