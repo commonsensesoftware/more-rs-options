@@ -6,7 +6,8 @@
 [mit-url]: https://github.com/commonsensesoftware/more-rs-options/blob/main/LICENSE
 [ci-badge]: https://github.com/commonsensesoftware/more-rs-options/actions/workflows/ci.yml/badge.svg
 
-More Options is a library for defining configuration options in Rust. Options can be initialized in code, bound from configuration, and/or composed through dependency injection (DI).
+More Options is a library for defining configuration options in Rust. Options can be initialized in code, bound from
+configuration, and/or composed through dependency injection (DI).
 
 You may be looking for:
 
@@ -25,7 +26,9 @@ This crate provides the following features:
 
 ## Options Pattern
 
-The options pattern uses structures to provide strongly typed access to groups of related settings without having to know how the settings were configured. The settings can be set explicitly in code or they can come from an external configuration source such as a file.
+The options pattern uses structures to provide strongly typed access to groups of related settings without having to
+know how the settings were configured. The settings can be set explicitly in code or they can come from an external
+configuration source such as a file.
 
 Consider the following options:
 
@@ -44,11 +47,11 @@ use options::Options;
 use std::rc::Rc;
 
 pub struct HttpClient {
-    options: Rc<dyn Options<EndpointOptions>>,
+    options: Rc<EndpointOptions>,
 }
 
 impl HttpClient {
-    pub fn new(options: Rc<dyn Options<EndpointOptions>>) -> Self {
+    pub fn new(options: Rc<EndpointOptions>) -> Self {
         Self { options }
     }
 
@@ -63,20 +66,22 @@ impl HttpClient {
 The defined options can be used in any number of ways, including just explicitly specifying the settings.
 
 ```rust
-use crate::*;
+use crate::{EndpointOptions, HttpClient};
 use std::rc::Rc;
 
 fn main() {
-    let options = Rc::new(options::create(EndpointOptions {
+    let options = Rc::new(EndpointOptions {
         url: "https://tempuri.org",
         retries: 2,
-    }));
+    });
     let client = HttpClient::new(options);
+    
     // TODO: use the client
 }
 ```
 
-If you expect to process your options from an external data source, then you'll almost certainly require supporting deserialization using [serde](https://crates.io/crates/serde) as follows:
+If you expect to process your options from an external data source, then you'll almost certainly require supporting
+deserialization using [serde](https://crates.io/crates/serde) as follows:
 
 ```rust
 use serde::Deserialize;
@@ -97,45 +102,45 @@ Suppose you had the following `appSettings.json` file:
 }
 ```
 
-You can construct the options from the settings by including the [more-config](https://crates.io/crates/more-config) crate as follows:
+You can construct the options from the settings by including the [more-config](https://crates.io/crates/more-config)
+crate as follows:
 
 ```rust
-use crate::*;
-use config::{*, ext::*};
+use crate::{EndpointOptions, HttpClient};
+use config::prelude::*;
+use std::error::Error;
 
-fn main() {
-    let config = DefaultConfigurationBuilder::new()
-        .add_json_file("appsettings.json")
-        .build()
-        .unwrap();
-    let options: EndpointOptions = config.reify();
+fn main() -> Result<(), Box<dyn Error + 'static>> {
+    let config = config::builder().add_json_file("appsettings.json").build()?;
+    let options: EndpointOptions = config.reify()?;
     let client = HttpClient::new(options);
+
     // TODO: use the client
+
+    Ok(())
 }
 ```
 
-You can go one step further and combine that configuration with the [more-di](https://crates.io/crates/more-di) crate to assemble all of the pieces for you:
+You can go one step further and combine that configuration with the [more-di](https://crates.io/crates/more-di) crate
+to assemble all of the pieces for you:
 
 ```rust
-use crate::*;
-use config::{*, ext::*};
-use di::*;
-use std::rc::Rc;
+use crate::{EndpointOptions, HttpClient};
+use config::prelude::*;
+use di::ServiceCollection;
+use std::error::Error;
 
-fn main() {
-    let config = Rc::from(
-        DefaultConfigurationBuilder::new()
-            .add_json_file("appsettings.json")
-            .build()
-            .unwrap()
-            .as_config());
+fn main() -> Result<(), Box<dyn Error + 'static>> {
+    let config = config::builder().add_json_file("appsettings.json").build()?;
     let provider = ServiceCollection::new()
         .add(transient_as_self::<HttpClient>())
         .apply_config::<EndpointOptions>(config)
-        .build_provider()
-        .unwrap();
+        .build_provider()?;
     let client = provider.get_required::<HttpClient>();
+
     // TODO: use the client
+
+    Ok(())
 }
 ```
 

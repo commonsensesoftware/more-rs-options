@@ -1,4 +1,4 @@
-use crate::{prelude::*, OptionsChangeTokenSource, Value};
+use crate::{prelude::*, ChangeTokenSource, Value};
 use ::config::{prelude::*, Reloadable};
 use ::di::{transient_factory, ServiceCollection};
 use serde::de::DeserializeOwned;
@@ -20,14 +20,14 @@ impl Reloadable for NeverReloads {
 }
 
 struct ConfigChangeTokenSource<R, V> {
-    name: Option<String>,
+    name: String,
     reloadable: R,
     _data: PhantomData<V>,
 }
 
 impl<R, T> ConfigChangeTokenSource<R, T> {
     #[inline]
-    pub fn new(name: Option<String>, reloadable: R) -> Self {
+    pub fn new(name: String, reloadable: R) -> Self {
         Self {
             name,
             reloadable,
@@ -36,15 +36,15 @@ impl<R, T> ConfigChangeTokenSource<R, T> {
     }
 }
 
-impl<R: Value + Reloadable, T: Value> OptionsChangeTokenSource<T> for ConfigChangeTokenSource<R, T> {
+impl<R: Value + Reloadable, T: Value> ChangeTokenSource<T> for ConfigChangeTokenSource<R, T> {
     #[inline]
     fn token(&self) -> Box<dyn ChangeToken> {
         Box::new(self.reloadable.reload_token())
     }
 
     #[inline]
-    fn name(&self) -> Option<&str> {
-        self.name.as_deref()
+    fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -55,7 +55,7 @@ pub trait ConfigExt<C>: Sized {
     /// # Arguments
     ///
     /// * `configuration` - The [configuration](config::Configuration) applied to the options
-    fn apply_config<T>(&mut self, configuration: C) -> OptionsBuilder<'_, T>
+    fn apply_config<T>(&mut self, configuration: C) -> Builder<'_, T>
     where
         T: Value + Default + DeserializeOwned + Send + Sync + 'static;
 
@@ -65,12 +65,12 @@ pub trait ConfigExt<C>: Sized {
     ///
     /// * `configuration` - The [configuration](config::Configuration) applied to the options
     /// * `key` - The key to the part of the [configuration](config::Configuration) applied to the options
-    fn apply_config_at<T>(&mut self, configuration: C, key: impl AsRef<str>) -> OptionsBuilder<'_, T>
+    fn apply_config_at<T>(&mut self, configuration: C, key: impl AsRef<str>) -> Builder<'_, T>
     where
         T: Value + Default + DeserializeOwned + Send + Sync + 'static;
 }
 
-fn add_change_token_source<B, T>(services: &mut ServiceCollection, name: Option<String>, configuration: &B)
+fn add_change_token_source<B, T>(services: &mut ServiceCollection, name: String, configuration: &B)
 where
     B: Value + Reloadable + Clone + 'static,
     T: Value + 'static,
@@ -80,12 +80,12 @@ where
 
         services.add(transient_factory(move |_| {
             ::di::Ref::new(ConfigChangeTokenSource::<B, T>::new(name.clone(), reloadable.clone()))
-                as ::di::Ref<dyn OptionsChangeTokenSource<T>>
+                as ::di::Ref<dyn ChangeTokenSource<T>>
         }));
     } else {
         services.add(transient_factory(move |_| {
             ::di::Ref::new(ConfigChangeTokenSource::<_, T>::new(name.clone(), NeverReloads))
-                as ::di::Ref<dyn OptionsChangeTokenSource<T>>
+                as ::di::Ref<dyn ChangeTokenSource<T>>
         }));
     }
 }
@@ -94,24 +94,25 @@ impl<C> ConfigExt<C> for ServiceCollection
 where
     C: Value + Binder + Reloadable + Clone + 'static,
 {
-    fn apply_config<T>(&mut self, configuration: C) -> OptionsBuilder<'_, T>
+    fn apply_config<T>(&mut self, configuration: C) -> Builder<'_, T>
     where
         T: Value + Default + DeserializeOwned + 'static,
     {
-        add_change_token_source::<_, T>(self, None, &configuration);
+        add_change_token_source::<_, T>(self, String::new(), &configuration);
         self.add_options()
             .configure(move |options: &mut T| configuration.bind_unchecked(options))
     }
 
-    fn apply_config_at<T>(&mut self, configuration: C, key: impl AsRef<str>) -> OptionsBuilder<'_, T>
+    fn apply_config_at<T>(&mut self, configuration: C, key: impl AsRef<str>) -> Builder<'_, T>
     where
         T: Value + Default + DeserializeOwned + 'static,
     {
-        let key = key.as_ref().to_owned();
+        let name = key;
+        let key = name.as_ref().to_owned();
 
-        add_change_token_source::<_, T>(self, Some(key.clone()), &configuration);
+        add_change_token_source::<_, T>(self, key.clone(), &configuration);
 
-        self.add_named_options(&key)
+        self.add_named_options(name)
             .configure(move |options: &mut T| configuration.bind_at_unchecked(&key, options))
     }
 }
@@ -119,7 +120,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Options, OptionsMonitor, OptionsSnapshot};
+    use crate::{Monitor, Snapshot};
     use ::config::ReloadableConfiguration;
     use ::di::ServiceCollection;
     use cfg_if::cfg_if;
@@ -150,10 +151,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert!(options.value().enabled);
+        assert!(options.enabled);
     }
 
     #[test]
@@ -169,10 +170,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert!(options.value().enabled);
+        assert!(options.enabled);
     }
 
     #[test]
@@ -188,10 +189,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn OptionsSnapshot<TestOptions>>();
+        let options = provider.get_required::<dyn Snapshot<TestOptions>>();
 
         // assert
-        assert!(options.get(Some("Test")).enabled);
+        assert!(options.get_named_unchecked("Test").enabled);
     }
 
     #[test]
@@ -213,8 +214,8 @@ mod tests {
             .apply_config::<TestOptions>(config)
             .build_provider()
             .unwrap();
-        let monitor = provider.get_required::<dyn OptionsMonitor<TestOptions>>();
-        let original = monitor.current_value();
+        let monitor = provider.get_required::<dyn Monitor<TestOptions>>();
+        let original = monitor.get_unchecked();
         let state = Arc::new((Mutex::new(false), Condvar::new()));
         let state_clone = state.clone();
         let _sub = monitor.on_change(Box::new(move |_, _| {
@@ -237,7 +238,7 @@ mod tests {
                     // the sync path is not guaranteed to be Send or Sync so it cannot automatically updated in the
                     // background. the change happens in the background, but it is not realized until the next time
                     // the value is polled. poll the monitor to force realization of the change
-                    let _ = monitor.current_value();
+                    let _ = monitor.get_unchecked();
                 }
             }
 
@@ -259,7 +260,7 @@ mod tests {
         }
 
         // act
-        let current = monitor.current_value();
+        let current = monitor.get_unchecked();
 
         // assert
         assert_eq!(original.enabled, true);

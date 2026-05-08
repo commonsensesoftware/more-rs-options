@@ -1,5 +1,5 @@
-use super::OptionsBuilder;
-use crate::*;
+use super::Builder;
+use crate::{validation::Validate, *};
 use cfg_if::cfg_if;
 use di::{
     exactly_one, scoped, singleton, singleton_as_self, transient, transient_factory, zero_or_more, ServiceCollection,
@@ -11,7 +11,7 @@ macro_rules! opts_ext {
         /// Defines extension methods for the [ServiceCollection](::di::ServiceCollection) struct.
         pub trait OptionsExt {
             /// Registers an options type that will have all of its associated services registered.
-            fn add_options<T: Value + Default + 'static>(&mut self) -> OptionsBuilder<'_, T>;
+            fn add_options<T: Value + Default + 'static>(&mut self) -> Builder<'_, T>;
 
             /// Registers an options type that will have all of its associated services registered.
             ///
@@ -21,17 +21,17 @@ macro_rules! opts_ext {
             fn add_named_options<T: Value + Default + 'static>(
                 &mut self,
                 name: impl AsRef<str>,
-            ) -> OptionsBuilder<'_, T>;
+            ) -> Builder<'_, T>;
 
             /// Registers an options type that will have all of its associated services registered.
             ///
             /// # Arguments
             ///
             /// * `factory` - The function used to create the associated options factory
-            fn add_options_with<T, F>(&mut self, factory: F) -> OptionsBuilder<'_, T>
+            fn add_options_with<T, F>(&mut self, factory: F) -> Builder<'_, T>
             where
                 T: Value,
-                F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + $($bounds)+;
+                F: Fn(&ServiceProvider) -> Ref<dyn Factory<T>> + $($bounds)+;
 
             /// Registers an options type that will have all of its associated services registered.
             ///
@@ -43,10 +43,10 @@ macro_rules! opts_ext {
                 &mut self,
                 name: impl AsRef<str>,
                 factory: F,
-            ) -> OptionsBuilder<'_, T>
+            ) -> Builder<'_, T>
             where
                 T: Value,
-                F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + $($bounds)+;
+                F: Fn(&ServiceProvider) -> Ref<dyn Factory<T>> + $($bounds)+;
 
             /// Registers an action used to initialize a particular type of configuration options.
             ///
@@ -103,91 +103,89 @@ macro_rules! opts_ext {
 
 fn _add_options<'a, T: Value>(
     services: &'a mut ServiceCollection,
-    name: Option<&str>,
+    name: &str,
     descriptor: ServiceDescriptor,
-) -> OptionsBuilder<'a, T> {
+) -> Builder<'a, T> {
     services
         .try_add(
-            singleton_as_self::<OptionsManager<T>>()
-                .depends_on(exactly_one::<dyn OptionsFactory<T>>())
-                .from(|sp| Ref::new(OptionsManager::new(sp.get_required::<dyn OptionsFactory<T>>()))),
+            singleton_as_self::<Manager<T>>()
+                .depends_on(exactly_one::<dyn Factory<T>>())
+                .from(|sp| Ref::new(Manager::new(sp.get_required::<dyn Factory<T>>()))),
         )
         .try_add(
-            singleton::<dyn Options<T>, OptionsManager<T>>()
-                .depends_on(exactly_one::<OptionsManager<T>>())
-                .from(|sp| sp.get_required::<OptionsManager<T>>()),
+            singleton::<T, Manager<T>>()
+                .depends_on(exactly_one::<Manager<T>>())
+                .from(|sp| sp.get_required::<Manager<T>>().get_unchecked()),
         )
         .try_add(
-            scoped::<dyn OptionsSnapshot<T>, OptionsManager<T>>()
-                .depends_on(exactly_one::<OptionsManager<T>>())
-                .from(|sp| sp.get_required::<OptionsManager<T>>()),
+            scoped::<dyn Snapshot<T>, Manager<T>>()
+                .depends_on(exactly_one::<Manager<T>>())
+                .from(|sp| sp.get_required::<Manager<T>>()),
         )
         .try_add(
-            singleton::<dyn OptionsMonitor<T>, DefaultOptionsMonitor<T>>()
-                .depends_on(exactly_one::<dyn OptionsMonitorCache<T>>())
-                .depends_on(zero_or_more::<dyn OptionsChangeTokenSource<T>>())
-                .depends_on(exactly_one::<dyn OptionsFactory<T>>())
+            singleton::<dyn Monitor<T>, DefaultMonitor<T>>()
+                .depends_on(exactly_one::<dyn MonitorCache<T>>())
+                .depends_on(zero_or_more::<dyn ChangeTokenSource<T>>())
+                .depends_on(exactly_one::<dyn Factory<T>>())
                 .from(|sp| {
-                    Ref::new(DefaultOptionsMonitor::new(
-                        sp.get_required::<dyn OptionsMonitorCache<T>>(),
-                        sp.get_all::<dyn OptionsChangeTokenSource<T>>().collect(),
-                        sp.get_required::<dyn OptionsFactory<T>>(),
+                    Ref::new(DefaultMonitor::new(
+                        sp.get_required::<dyn MonitorCache<T>>(),
+                        sp.get_all::<dyn ChangeTokenSource<T>>().collect(),
+                        sp.get_required::<dyn Factory<T>>(),
                     ))
                 }),
         )
         .try_add(descriptor)
-        .try_add(
-            singleton::<dyn OptionsMonitorCache<T>, OptionsCache<T>>().from(|_| Ref::new(OptionsCache::default())),
-        );
+        .try_add(singleton::<dyn MonitorCache<T>, Cache<T>>().from(|_| Ref::new(Cache::default())));
 
-    OptionsBuilder::new(services, name)
+    Builder::new(services, name)
 }
 
 macro_rules! opts_ext_impl {
     (($($bounds:tt)+)) => {
         impl OptionsExt for ServiceCollection {
-            fn add_options<T: Value + Default + 'static>(&mut self) -> OptionsBuilder<'_, T> {
-                let descriptor = transient::<dyn OptionsFactory<T>, DefaultOptionsFactory<T>>()
-                    .depends_on(zero_or_more::<dyn ConfigureOptions<T>>())
-                    .depends_on(zero_or_more::<dyn PostConfigureOptions<T>>())
-                    .depends_on(zero_or_more::<dyn ValidateOptions<T>>())
+            fn add_options<T: Value + Default + 'static>(&mut self) -> Builder<'_, T> {
+                let descriptor = transient::<dyn Factory<T>, DefaultFactory<T>>()
+                    .depends_on(zero_or_more::<dyn Configure<T>>())
+                    .depends_on(zero_or_more::<dyn PostConfigure<T>>())
+                    .depends_on(zero_or_more::<dyn Validate<T>>())
                     .from(|sp| {
-                        Ref::new(DefaultOptionsFactory::new(
-                            sp.get_all::<dyn ConfigureOptions<T>>().collect(),
-                            sp.get_all::<dyn PostConfigureOptions<T>>().collect(),
-                            sp.get_all::<dyn ValidateOptions<T>>().collect(),
+                        Ref::new(DefaultFactory::new(
+                            sp.get_all::<dyn Configure<T>>().collect(),
+                            sp.get_all::<dyn PostConfigure<T>>().collect(),
+                            sp.get_all::<dyn Validate<T>>().collect(),
                         ))
                     });
 
-                _add_options(self, None, descriptor)
+                _add_options(self, "", descriptor)
             }
 
             fn add_named_options<T: Value + Default + 'static>(
                 &mut self,
                 name: impl AsRef<str>,
-            ) -> OptionsBuilder<'_, T> {
-                let descriptor = transient::<dyn OptionsFactory<T>, DefaultOptionsFactory<T>>()
-                    .depends_on(zero_or_more::<dyn ConfigureOptions<T>>())
-                    .depends_on(zero_or_more::<dyn PostConfigureOptions<T>>())
-                    .depends_on(zero_or_more::<dyn ValidateOptions<T>>())
+            ) -> Builder<'_, T> {
+                let descriptor = transient::<dyn Factory<T>, DefaultFactory<T>>()
+                    .depends_on(zero_or_more::<dyn Configure<T>>())
+                    .depends_on(zero_or_more::<dyn PostConfigure<T>>())
+                    .depends_on(zero_or_more::<dyn Validate<T>>())
                     .from(|sp| {
-                        Ref::new(DefaultOptionsFactory::new(
-                            sp.get_all::<dyn ConfigureOptions<T>>().collect(),
-                            sp.get_all::<dyn PostConfigureOptions<T>>().collect(),
-                            sp.get_all::<dyn ValidateOptions<T>>().collect(),
+                        Ref::new(DefaultFactory::new(
+                            sp.get_all::<dyn Configure<T>>().collect(),
+                            sp.get_all::<dyn PostConfigure<T>>().collect(),
+                            sp.get_all::<dyn Validate<T>>().collect(),
                         ))
                     });
 
-                _add_options(self, Some(name.as_ref()), descriptor)
+                _add_options(self, name.as_ref(), descriptor)
             }
 
             #[inline]
-            fn add_options_with<T, F>(&mut self, factory: F) -> OptionsBuilder<'_, T>
+            fn add_options_with<T, F>(&mut self, factory: F) -> Builder<'_, T>
             where
                 T: Value,
-                F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + $($bounds)+,
+                F: Fn(&ServiceProvider) -> Ref<dyn Factory<T>> + $($bounds)+,
             {
-                _add_options(self, None, transient_factory(factory))
+                _add_options(self, "", transient_factory(factory))
             }
 
             #[inline]
@@ -195,12 +193,12 @@ macro_rules! opts_ext_impl {
                 &mut self,
                 name: impl AsRef<str>,
                 factory: F,
-            ) -> OptionsBuilder<'_, T>
+            ) -> Builder<'_, T>
             where
                 T: Value,
-                F: Fn(&ServiceProvider) -> Ref<dyn OptionsFactory<T>> + $($bounds)+,
+                F: Fn(&ServiceProvider) -> Ref<dyn Factory<T>> + $($bounds)+,
             {
-                _add_options(self, Some(name.as_ref()), transient_factory(factory))
+                _add_options(self, name.as_ref(), transient_factory(factory))
             }
 
             #[inline]
@@ -275,12 +273,12 @@ mod tests {
     #[derive(Default)]
     struct TestValidation;
 
-    impl ValidateOptions<TestOptions> for TestValidation {
-        fn validate(&self, _name: Option<&str>, options: &TestOptions) -> ValidateOptionsResult {
+    impl Validate<TestOptions> for TestValidation {
+        fn run(&self, _name: &str, options: &TestOptions) -> validation::Result {
             if !options.enabled && options.setting > 0 {
-                ValidateOptionsResult::fail("Setting must be zero when disabled")
+                validation::fail("Setting must be zero when disabled")
             } else {
-                ValidateOptionsResult::success()
+                validation::success()
             }
         }
     }
@@ -317,7 +315,7 @@ mod tests {
             .unwrap();
 
         // act
-        let result = provider.get::<dyn Options<TestOptions>>();
+        let result = provider.get::<TestOptions>();
 
         // assert
         assert!(result.is_some());
@@ -332,10 +330,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 1);
+        assert_eq!(options.setting, 1);
     }
 
     #[test]
@@ -347,10 +345,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 1);
+        assert_eq!(options.setting, 1);
     }
 
     #[test]
@@ -364,8 +362,8 @@ mod tests {
             .unwrap();
 
         // act
-        let result = provider.get_required::<dyn Options<TestOptions>>();
-        let options = result.value();
+        let result = provider.get_required::<TestOptions>();
+        let options = result;
 
         // assert
         assert!(options.enabled);
@@ -380,18 +378,15 @@ mod tests {
                 o.enabled = true;
                 o.setting = 1;
             })
-            .add(
-                transient::<dyn ValidateOptions<TestOptions>, TestValidation>()
-                    .from(|_| Ref::new(TestValidation::default())),
-            )
+            .add(transient::<dyn Validate<TestOptions>, TestValidation>().from(|_| Ref::new(TestValidation::default())))
             .build_provider()
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        let _ = options.value();
+        let _ = options;
     }
 
     #[test]
@@ -403,18 +398,15 @@ mod tests {
                 o.enabled = false;
                 o.setting = 1;
             })
-            .add(
-                transient::<dyn ValidateOptions<TestOptions>, TestValidation>()
-                    .from(|_| Ref::new(TestValidation::default())),
-            )
+            .add(transient::<dyn Validate<TestOptions>, TestValidation>().from(|_| Ref::new(TestValidation::default())))
             .build_provider()
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        let _ = options.value();
+        let _ = options;
     }
 
     #[test]
@@ -428,10 +420,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 1);
+        assert_eq!(options.setting, 1);
     }
 
     #[test]
@@ -445,10 +437,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 3);
+        assert_eq!(options.setting, 3);
     }
 
     #[test]
@@ -464,10 +456,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 6);
+        assert_eq!(options.setting, 6);
     }
 
     #[test]
@@ -485,10 +477,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 10);
+        assert_eq!(options.setting, 10);
     }
 
     #[test]
@@ -511,10 +503,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 15);
+        assert_eq!(options.setting, 15);
     }
 
     #[test]
@@ -528,10 +520,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 1);
+        assert_eq!(options.setting, 1);
     }
 
     #[test]
@@ -545,10 +537,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 3);
+        assert_eq!(options.setting, 3);
     }
 
     #[test]
@@ -564,10 +556,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 6);
+        assert_eq!(options.setting, 6);
     }
 
     #[test]
@@ -585,10 +577,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 10);
+        assert_eq!(options.setting, 10);
     }
 
     #[test]
@@ -611,10 +603,10 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
 
         // assert
-        assert_eq!(options.value().setting, 15);
+        assert_eq!(options.setting, 15);
     }
 
     #[test]
@@ -635,11 +627,11 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
         let service = provider.get_required::<TestService>();
 
         // assert
-        assert_eq!(options.value().enabled, true);
+        assert_eq!(options.enabled, true);
         assert_eq!(service.calls(), 1);
     }
 
@@ -661,11 +653,11 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
         let service = provider.get_required::<TestService>();
 
         // assert
-        assert_eq!(options.value().enabled, true);
+        assert_eq!(options.enabled, true);
         assert_eq!(service.calls(), 2);
     }
 
@@ -687,11 +679,11 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
         let service = provider.get_required::<TestService>();
 
         // assert
-        assert_eq!(options.value().enabled, true);
+        assert_eq!(options.enabled, true);
         assert_eq!(service.calls(), 3);
     }
 
@@ -713,11 +705,11 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
         let service = provider.get_required::<TestService>();
 
         // assert
-        assert_eq!(options.value().enabled, true);
+        assert_eq!(options.enabled, true);
         assert_eq!(service.calls(), 4);
     }
 
@@ -744,11 +736,11 @@ mod tests {
             .unwrap();
 
         // act
-        let options = provider.get_required::<dyn Options<TestOptions>>();
+        let options = provider.get_required::<TestOptions>();
         let service = provider.get_required::<TestService>();
 
         // assert
-        assert_eq!(options.value().enabled, true);
+        assert_eq!(options.enabled, true);
         assert_eq!(service.calls(), 5);
     }
 }

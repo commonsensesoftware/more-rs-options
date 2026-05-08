@@ -1,4 +1,4 @@
-use crate::{OptionsChangeTokenSource, OptionsFactory, OptionsMonitorCache, Ref, Value};
+use crate::{ChangeTokenSource, Factory, MonitorCache, Ref, Value, validation::Error};
 use cfg_if::cfg_if;
 use std::sync::{Arc, RwLock, Weak};
 
@@ -9,7 +9,7 @@ cfg_if! {
     }
 }
 
-type Callback<T> = dyn Fn(Option<&str>, Ref<T>) + Send + Sync;
+type Callback<T> = dyn Fn(&str, Ref<T>) + Send + Sync;
 
 /// Represents a change subscription.
 ///
@@ -30,20 +30,50 @@ impl<T: Value> Subscription<T> {
     }
 }
 
-/// Defines the behavior for notifications when [options](crate::Options) instances change.
+/// Defines the behavior for notifications when options instances change.
 #[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
-pub trait OptionsMonitor<T: Value> {
-    /// Returns the current instance with the default options name.
-    fn current_value(&self) -> Ref<T> {
-        self.get(None)
+pub trait Monitor<T: Value> {
+    /// Gets the default, unnamed configuration options.
+    #[must_use]
+    fn get(&self) -> Result<Ref<T>, Error> {
+        self.get_named("")
     }
 
-    /// Returns a configured instance with the given name.
+    /// Gets the default, unnamed configuration options.
+    /// 
+    /// # Remarks
+    ///
+    /// This function panics if the configuration options could not be successfully retrieved.
+    fn get_unchecked(&self) -> Ref<T> {
+        match self.get_named("") {
+            Ok(value) => value,
+            Err(error) => panic!("{}", error),
+        }
+    }
+
+    /// Gets the configuration options with the given name.
     ///
     /// # Arguments
     ///
     /// * `name` - The name associated with the options.
-    fn get(&self, name: Option<&str>) -> Ref<T>;
+    #[must_use]
+    fn get_named(&self, name: &str) -> Result<Ref<T>, Error>;
+
+    /// Gets the configuration options with the given name.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The optional name of the options to retrieve
+    ///
+    /// # Remarks
+    ///
+    /// This function panics if the configuration options could not be successfully retrieved.
+    fn get_named_unchecked(&self, name: &str) -> Ref<T> {
+        match self.get_named(name) {
+            Ok(value) => value,
+            Err(error) => panic!("[{name}] {}", error),
+        }
+    }
 
     /// Registers a callback function to be invoked when the configured instance with the given name changes.
     ///
@@ -55,28 +85,29 @@ pub trait OptionsMonitor<T: Value> {
     ///
     /// A change subscription for the specified options. When the subscription is dropped, no further notifications
     /// will be propagated.
+    #[must_use = "no change notifications occur after the subscription is dropped"]
     fn on_change(&self, changed: Box<Callback<T>>) -> Subscription<T>;
 }
 
 /// Represents the default implementation for notifications when option instances change.
-pub struct DefaultOptionsMonitor<T: Value> {
+pub struct DefaultMonitor<T: Value> {
     tracker: Arc<ChangeTracker<T>>,
     _subscriptions: Vec<Box<dyn tokens::Subscription>>,
 }
 
 #[cfg(feature = "async")]
-impl<T: Value + 'static> DefaultOptionsMonitor<T> {
+impl<T: Value + 'static> DefaultMonitor<T> {
     /// Initializes a new default options monitor.
     ///
     /// # Arguments
     ///
     /// * `cache` - The [cache](crate::OptionsMonitorCache) used for monitored options
-    /// * `sources` - The [source tokens](crate::OptionsChangeTokenSource) used to track option changes
+    /// * `sources` - The [source tokens](crate::ChangeTokenSource) used to track option changes
     /// * `factory` - The [factory](crate::OptionsFactory) used to create new options
     pub fn new(
-        cache: Ref<dyn OptionsMonitorCache<T>>,
-        sources: Vec<Ref<dyn OptionsChangeTokenSource<T>>>,
-        factory: Ref<dyn OptionsFactory<T>>,
+        cache: Ref<dyn MonitorCache<T>>,
+        sources: Vec<Ref<dyn ChangeTokenSource<T>>>,
+        factory: Ref<dyn Factory<T>>,
     ) -> Self {
         let tracker = Arc::new(ChangeTracker::new(cache, factory));
         let mut subscriptions = Vec::new();
@@ -84,17 +115,17 @@ impl<T: Value + 'static> DefaultOptionsMonitor<T> {
         for source in sources {
             let producer = Producer::new(source.clone());
             let consumer = tracker.clone();
-            let state = source.name().map(|n| Arc::new(n.to_owned()));
+            let state = Arc::new(source.name().to_owned());
             let subscription: Box<dyn tokens::Subscription> = Box::new(tokens::on_change(
                 move || producer.token(),
                 move |state| {
                     if let Some(name) = state {
-                        consumer.on_change(Some(name.as_str()));
+                        consumer.on_change(&name);
                     } else {
-                        consumer.on_change(None);
+                        consumer.on_change("");
                     };
                 },
-                state,
+                Some(state),
             ));
             subscriptions.push(subscription);
         }
@@ -107,18 +138,18 @@ impl<T: Value + 'static> DefaultOptionsMonitor<T> {
 }
 
 #[cfg(not(feature = "async"))]
-impl<T: Value + 'static> DefaultOptionsMonitor<T> {
+impl<T: Value + 'static> DefaultMonitor<T> {
     /// Initializes a new default options monitor.
     ///
     /// # Arguments
     ///
     /// * `cache` - The [cache](crate::OptionsMonitorCache) used for monitored options
-    /// * `sources` - The [source tokens](crate::OptionsChangeTokenSource) used to track option changes
+    /// * `sources` - The [source tokens](crate::ChangeTokenSource) used to track option changes
     /// * `factory` - The [factory](crate::OptionsFactory) used to create new options
     pub fn new(
-        cache: Ref<dyn OptionsMonitorCache<T>>,
-        sources: Vec<Ref<dyn OptionsChangeTokenSource<T>>>,
-        factory: Ref<dyn OptionsFactory<T>>,
+        cache: Ref<dyn MonitorCache<T>>,
+        sources: Vec<Ref<dyn ChangeTokenSource<T>>>,
+        factory: Ref<dyn Factory<T>>,
     ) -> Self {
         Self {
             tracker: Arc::new(ChangeTracker::new(cache, sources, factory)),
@@ -127,8 +158,8 @@ impl<T: Value + 'static> DefaultOptionsMonitor<T> {
     }
 }
 
-impl<T: Value> OptionsMonitor<T> for DefaultOptionsMonitor<T> {
-    fn get(&self, name: Option<&str>) -> Ref<T> {
+impl<T: Value> Monitor<T> for DefaultMonitor<T> {
+    fn get_named(&self, name: &str) -> Result<Ref<T>, Error> {
         cfg_if! {
             if #[cfg(not(feature = "async"))] {
                 self.tracker.check_for_changes();
@@ -145,12 +176,12 @@ impl<T: Value> OptionsMonitor<T> for DefaultOptionsMonitor<T> {
 }
 
 struct ChangeTracker<T: Value> {
-    cache: Ref<dyn OptionsMonitorCache<T>>,
-    factory: Ref<dyn OptionsFactory<T>>,
+    cache: Ref<dyn MonitorCache<T>>,
+    factory: Ref<dyn Factory<T>>,
     listeners: RwLock<Vec<Weak<Callback<T>>>>,
 
     #[cfg(not(feature = "async"))]
-    sources: Vec<Ref<dyn OptionsChangeTokenSource<T>>>,
+    sources: Vec<Ref<dyn ChangeTokenSource<T>>>,
 
     #[cfg(not(feature = "async"))]
     tokens: RefCell<Vec<Box<dyn ChangeToken>>>,
@@ -162,9 +193,8 @@ struct ChangeTracker<T: Value> {
 }
 
 impl<T: Value> ChangeTracker<T> {
-    fn get(&self, name: Option<&str>) -> Ref<T> {
-        self.cache
-            .get_or_add(name, &|n| self.factory.create(n).unwrap_or_else(|e| panic!("{}", e)))
+    fn get(&self, name: &str) -> Result<Ref<T>, Error> {
+        self.cache.get_or_add(name, &|n| self.factory.create(n))
     }
 
     fn add(&self, listener: Box<Callback<T>>) -> Subscription<T> {
@@ -183,7 +213,7 @@ impl<T: Value> ChangeTracker<T> {
         Subscription::new(source)
     }
 
-    fn on_change(&self, name: Option<&str>) {
+    fn on_change(&self, name: &str) {
         // acquire a read-lock and capture any callbacks that are still alive. do NOT invoke the callback with the
         // read-lock held. the callback might register a new callback on the same token which will result in a deadlock.
         // invoking the callbacks after the read-lock is released ensures that won't happen.
@@ -198,7 +228,9 @@ impl<T: Value> ChangeTracker<T> {
         self.cache.try_remove(name);
 
         for callback in callbacks {
-            callback(name, self.get(name));
+            if let Ok(options) = self.get(name) {
+                callback(name, options);
+            }
         }
     }
 }
@@ -206,7 +238,7 @@ impl<T: Value> ChangeTracker<T> {
 #[cfg(feature = "async")]
 impl<T: Value> ChangeTracker<T> {
     #[inline]
-    fn new(cache: Ref<dyn OptionsMonitorCache<T>>, factory: Ref<dyn OptionsFactory<T>>) -> Self {
+    fn new(cache: Ref<dyn MonitorCache<T>>, factory: Ref<dyn Factory<T>>) -> Self {
         Self {
             cache,
             factory,
@@ -218,9 +250,9 @@ impl<T: Value> ChangeTracker<T> {
 #[cfg(not(feature = "async"))]
 impl<T: Value> ChangeTracker<T> {
     fn new(
-        cache: Ref<dyn OptionsMonitorCache<T>>,
-        sources: Vec<Ref<dyn OptionsChangeTokenSource<T>>>,
-        factory: Ref<dyn OptionsFactory<T>>,
+        cache: Ref<dyn MonitorCache<T>>,
+        sources: Vec<Ref<dyn ChangeTokenSource<T>>>,
+        factory: Ref<dyn Factory<T>>,
     ) -> Self {
         let len = sources.len();
         let tokens = sources.iter().map(|s| s.token()).collect();
@@ -255,17 +287,17 @@ impl<T: Value> ChangeTracker<T> {
 
 cfg_if! {
     if #[cfg(feature = "async")] {
-        struct Producer<T: Value>(Ref<dyn OptionsChangeTokenSource<T>>);
+        struct Producer<T: Value>(Ref<dyn ChangeTokenSource<T>>);
 
         impl<T: Value> Producer<T> {
             #[inline]
-            fn new(source: Ref<dyn OptionsChangeTokenSource<T>>) -> Self {
+            fn new(source: Ref<dyn ChangeTokenSource<T>>) -> Self {
                 Self(source)
             }
         }
 
         impl<T: Value> std::ops::Deref for Producer<T> {
-            type Target = dyn OptionsChangeTokenSource<T>;
+            type Target = dyn ChangeTokenSource<T>;
 
             #[inline]
             fn deref(&self) -> &Self::Target {
@@ -278,7 +310,7 @@ cfg_if! {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::*;
+    use crate::{Cache, Configure, DefaultFactory};
     use std::{
         cell::RefCell,
         sync::{
@@ -298,20 +330,24 @@ mod tests {
     }
 
     impl OptionsState {
+        #[inline]
         fn is_dirty(&self) -> bool {
             self.dirty.load(Ordering::SeqCst)
         }
 
+        #[inline]
         fn mark_dirty(&self) {
             self.dirty.store(true, Ordering::SeqCst)
         }
 
+        #[inline]
         fn reset(&self) {
             self.dirty.store(false, Ordering::SeqCst)
         }
     }
 
     impl Default for OptionsState {
+        #[inline]
         fn default() -> Self {
             Self {
                 dirty: AtomicBool::new(true),
@@ -324,9 +360,9 @@ mod tests {
         counter: AtomicU8,
     }
 
-    impl ConfigureOptions<Config> for ConfigSetup {
-        fn configure(&self, name: Option<&str>, options: &mut Config) {
-            if name.is_none() {
+    impl Configure<Config> for ConfigSetup {
+        fn run(&self, name: &str, options: &mut Config) {
+            if name.is_empty() {
                 let retries = self.counter.fetch_add(1, Ordering::SeqCst) + 1;
                 options.retries = retries;
             }
@@ -339,34 +375,34 @@ mod tests {
     }
 
     impl ConfigSource {
+        #[inline]
         fn changed(&self) {
             self.token.notify()
         }
     }
 
-    impl OptionsChangeTokenSource<Config> for ConfigSource {
+    impl ChangeTokenSource<Config> for ConfigSource {
+        #[inline]
         fn token(&self) -> Box<dyn ChangeToken> {
             Box::new(self.token.clone())
         }
     }
 
     struct Foo {
-        monitor: Ref<dyn OptionsMonitor<Config>>,
+        monitor: Ref<dyn Monitor<Config>>,
         _sub: Subscription<Config>,
         state: Arc<OptionsState>,
         retries: RefCell<u8>,
     }
 
     impl Foo {
-        fn new(monitor: Ref<dyn OptionsMonitor<Config>>) -> Self {
+        fn new(monitor: Ref<dyn Monitor<Config>>) -> Self {
             let state = Arc::new(OptionsState::default());
             let other = state.clone();
 
             Self {
                 monitor: monitor.clone(),
-                _sub: monitor.on_change(Box::new(move |_name: Option<&str>, _options: Ref<Config>| {
-                    other.mark_dirty()
-                })),
+                _sub: monitor.on_change(Box::new(move |_name: &str, _options: Ref<Config>| other.mark_dirty())),
                 state,
                 retries: RefCell::default(),
             }
@@ -374,7 +410,7 @@ mod tests {
 
         fn retries(&self) -> u8 {
             if self.state.is_dirty() {
-                *self.retries.borrow_mut() = self.monitor.current_value().retries;
+                *self.retries.borrow_mut() = self.monitor.get_unchecked().retries;
                 self.state.reset();
             }
 
@@ -382,27 +418,23 @@ mod tests {
         }
     }
 
-    fn new_monitor() -> (Ref<dyn OptionsMonitor<Config>>, Ref<ConfigSource>, Ref<ConfigSetup>) {
-        let cache = Ref::new(OptionsCache::<Config>::default());
+    fn new_monitor() -> (Ref<dyn Monitor<Config>>, Ref<ConfigSource>, Ref<ConfigSetup>) {
+        let cache = Ref::new(Cache::<Config>::default());
         let setup = Ref::new(ConfigSetup::default());
-        let factory = Ref::new(DefaultOptionsFactory::new(
-            vec![setup.clone()],
-            Vec::default(),
-            Vec::default(),
-        ));
+        let factory = Ref::new(DefaultFactory::new(vec![setup.clone()], Vec::default(), Vec::default()));
         let source = Ref::new(ConfigSource::default());
-        let monitor: Ref<dyn OptionsMonitor<Config>> =
-            Ref::new(DefaultOptionsMonitor::new(cache, vec![source.clone()], factory));
+        let monitor: Ref<dyn Monitor<Config>> = Ref::new(DefaultMonitor::new(cache, vec![source.clone()], factory));
         (monitor, source, setup)
     }
 
-    /// A named [OptionsChangeTokenSource] for testing multi-source scenarios.
+    /// A named [ChangeTokenSource] for testing multi-source scenarios.
     struct NamedConfigSource {
         name: String,
         token: SharedChangeToken<SingleChangeToken>,
     }
 
     impl NamedConfigSource {
+        #[inline]
         fn new(name: &str) -> Self {
             Self {
                 name: name.to_owned(),
@@ -410,22 +442,25 @@ mod tests {
             }
         }
 
+        #[inline]
         fn changed(&self) {
             self.token.notify()
         }
     }
 
-    impl OptionsChangeTokenSource<Config> for NamedConfigSource {
+    impl ChangeTokenSource<Config> for NamedConfigSource {
+        #[inline]
         fn token(&self) -> Box<dyn ChangeToken> {
             Box::new(self.token.clone())
         }
 
-        fn name(&self) -> Option<&str> {
-            Some(&self.name)
+        #[inline]
+        fn name(&self) -> &str {
+            &self.name
         }
     }
 
-    /// A [ConfigureOptions] that sets retries based on name using an atomic counter per name to track how many times
+    /// A [Configure] that sets retries based on name using an atomic counter per name to track how many times
     /// the factory has been called.
     struct NamedConfigSetup {
         a: AtomicU8,
@@ -441,15 +476,11 @@ mod tests {
         }
     }
 
-    impl ConfigureOptions<Config> for NamedConfigSetup {
-        fn configure(&self, name: Option<&str>, options: &mut Config) {
+    impl Configure<Config> for NamedConfigSetup {
+        fn run(&self, name: &str, options: &mut Config) {
             match name {
-                Some("a") => {
-                    options.retries = self.a.fetch_add(1, Ordering::SeqCst) + 10;
-                }
-                Some("b") => {
-                    options.retries = self.b.fetch_add(1, Ordering::SeqCst) + 20;
-                }
+                "a" => options.retries = self.a.fetch_add(1, Ordering::SeqCst) + 10,
+                "b" => options.retries = self.b.fetch_add(1, Ordering::SeqCst) + 20,
                 _ => {}
             }
         }
@@ -458,19 +489,18 @@ mod tests {
     #[test]
     fn monitored_options_should_update_when_source_changes() {
         // arrange
-        let cache = Ref::new(OptionsCache::<Config>::default());
+        let cache = Ref::new(Cache::<Config>::default());
         let setup = Ref::new(ConfigSetup::default());
-        let factory = Ref::new(DefaultOptionsFactory::new(vec![setup], Vec::default(), Vec::default()));
+        let factory = Ref::new(DefaultFactory::new(vec![setup], Vec::default(), Vec::default()));
         let source = Ref::new(ConfigSource::default());
-        let monitor: Ref<dyn OptionsMonitor<Config>> =
-            Ref::new(DefaultOptionsMonitor::new(cache, vec![source.clone()], factory));
+        let monitor: Ref<dyn Monitor<Config>> = Ref::new(DefaultMonitor::new(cache, vec![source.clone()], factory));
         let foo = Foo::new(monitor.clone());
         let initial = foo.retries();
 
         // act
         source.changed();
 
-        let _ = monitor.get(None);
+        let _ = monitor.get_unchecked();
 
         // assert
         assert_eq!(initial, 1);
@@ -482,17 +512,17 @@ mod tests {
         // arrange
         let (monitor, source, _) = new_monitor();
 
-        let first = monitor.get(None);
+        let first = monitor.get_unchecked();
         assert_eq!(first.retries, 1);
 
-        let cached = monitor.get(None);
+        let cached = monitor.get_unchecked();
         assert_eq!(cached.retries, 1);
 
         // act
         source.changed();
 
         // assert
-        let updated = monitor.get(None);
+        let updated = monitor.get_unchecked();
 
         assert_eq!(updated.retries, 2);
     }
@@ -501,39 +531,35 @@ mod tests {
     fn on_change_callbacks_fire_with_correct_name_and_value() {
         // arrange
         let (monitor, source, _) = new_monitor();
-        let _ = monitor.get(None);
-        let observed_name: Arc<Mutex<Option<Option<String>>>> = Arc::new(Mutex::new(None));
-        let observed_retries: Arc<Mutex<Option<u8>>> = Arc::new(Mutex::new(None));
+        let _ = monitor.get();
+        let observed_name: Arc<Mutex<String>> = Arc::new(Mutex::new(String::new()));
+        let observed_retries: Arc<Mutex<u8>> = Arc::new(Mutex::new(0));
         let name_clone = observed_name.clone();
         let retries_clone = observed_retries.clone();
         let _sub = monitor.on_change(Box::new(move |name, opts| {
-            *name_clone.lock().unwrap() = Some(name.map(|s| s.to_owned()));
-            *retries_clone.lock().unwrap() = Some(opts.retries);
+            *name_clone.lock().unwrap() = name.to_owned();
+            *retries_clone.lock().unwrap() = opts.retries;
         }));
 
         // act
         source.changed();
-        let _ = monitor.get(None);
+        let _ = monitor.get();
 
         // assert
         let name_val = observed_name.lock().unwrap();
 
-        assert_eq!(
-            *name_val,
-            Some(None),
-            "callback should receive name=None for unnamed source"
-        );
+        assert_eq!(*name_val, "", "callback should receive '' for unnamed source");
 
         let retries_val = observed_retries.lock().unwrap();
 
-        assert_eq!(*retries_val, Some(2), "callback should receive updated retries value");
+        assert_eq!(*retries_val, 2, "callback should receive updated retries value");
     }
 
     #[test]
     fn dropping_subscription_prevents_further_callbacks() {
         // arrange
         let (monitor, source, _setup) = new_monitor();
-        let _ = monitor.get(None);
+        let _ = monitor.get();
         let call_count = Arc::new(AtomicU32::new(0));
         let count_clone = call_count.clone();
         let sub = monitor.on_change(Box::new(move |_, _| {
@@ -542,7 +568,7 @@ mod tests {
 
         // act
         source.changed();
-        let _ = monitor.get(None);
+        let _ = monitor.get();
 
         assert_eq!(
             call_count.load(Ordering::SeqCst),
@@ -554,7 +580,7 @@ mod tests {
 
         // act
         source.changed();
-        let _ = monitor.get(None);
+        let _ = monitor.get();
 
         // assert
         assert_eq!(
@@ -567,43 +593,43 @@ mod tests {
     #[test]
     fn multiple_sources_changing_one_only_invalidates_that_source() {
         // arrange
-        let cache = Ref::new(OptionsCache::<Config>::default());
+        let cache = Ref::new(Cache::<Config>::default());
         let setup = Ref::new(NamedConfigSetup::default());
-        let factory = Ref::new(DefaultOptionsFactory::new(vec![setup], Vec::default(), Vec::default()));
+        let factory = Ref::new(DefaultFactory::new(vec![setup], Vec::default(), Vec::default()));
         let source_a = Ref::new(NamedConfigSource::new("a"));
         let source_b = Ref::new(NamedConfigSource::new("b"));
-        let monitor: Ref<dyn OptionsMonitor<Config>> = Ref::new(DefaultOptionsMonitor::new(
+        let monitor: Ref<dyn Monitor<Config>> = Ref::new(DefaultMonitor::new(
             cache,
             vec![source_a.clone(), source_b.clone()],
             factory,
         ));
-        let val_a = monitor.get(Some("a"));
-        let val_b = monitor.get(Some("b"));
+        let val_a = monitor.get_named_unchecked("a");
+        let val_b = monitor.get_named_unchecked("b");
 
         assert_eq!(val_a.retries, 10, "source a initial retries");
         assert_eq!(val_b.retries, 20, "source b initial retries");
 
-        let callback_names: Arc<Mutex<Vec<Option<String>>>> = Arc::new(Mutex::new(Vec::new()));
+        let callback_names: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
         let names_clone = callback_names.clone();
         let _sub = monitor.on_change(Box::new(move |name, _| {
-            names_clone.lock().unwrap().push(name.map(|s| s.to_owned()));
+            names_clone.lock().unwrap().push(name.to_owned());
         }));
 
         // act
         source_a.changed();
 
-        let _ = monitor.get(Some("a"));
+        let _ = monitor.get_named("a");
 
         // assert
         let names = callback_names.lock().unwrap();
         assert_eq!(names.len(), 1, "only one callback should fire");
-        assert_eq!(names[0], Some("a".to_owned()), "callback should fire for source a");
+        assert_eq!(names[0], "a", "callback should fire for source a");
         drop(names);
 
-        let val_a_updated = monitor.get(Some("a"));
+        let val_a_updated = monitor.get_named_unchecked("a");
         assert_eq!(val_a_updated.retries, 11, "source a should be invalidated → new value");
 
-        let val_b_same = monitor.get(Some("b"));
+        let val_b_same = monitor.get_named_unchecked("b");
         assert_eq!(val_b_same.retries, 20, "source b should still be cached → same value");
     }
 }
