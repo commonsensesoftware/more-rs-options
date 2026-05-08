@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn Error + 'static>> {
 }
 ```
 
-## Monitor
+## Options Monitor
 
 Monitored options will reflect the current setting values whenever an underlying source changes.
 
