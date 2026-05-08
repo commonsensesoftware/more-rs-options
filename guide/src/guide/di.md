@@ -12,7 +12,7 @@ configuration:
 ```rust
 use config::prelude::*;
 use di::{injectable, ServiceCollection, Ref}
-use options::{prelude::*, Options};
+use options::prelude::*;
 use serde::Deserialize;
 use std::error::Error;
 
@@ -23,18 +23,17 @@ pub struct PositionOptions {
 }
 
 pub TestModel {
-    options: Ref<dyn Options<Position>>
+    options: Ref<PositionOptions>
 }
 
 #[injectable]
 impl TestModel {
-    pub new(options: Ref<dyn Options<Position>>) -> Self {
+    pub new(options: Ref<PositionOptions>) -> Self {
         Self { options }
     }
 
     pub get(&self) -> String {
-        let value = self.options.value();
-        format!("Title: {}\nName: {}", value.title, value.name)
+        format!("Title: {}\nName: {}", self.options.title, self.options.name)
     }
 }
 
@@ -63,19 +62,19 @@ services.configure_options::<MyAltOptions>(|options| options.count = 1);
 services.add_named_options::<MyOtherOptions>("name")
         .configure5(
             |options,
-            s2: Rc<Service2>,
-            s1: Rc<Service1>,
-            s3: Rc<Service3>,
-            s4: Rc<Service4>
-            s4: Rc<Service5>| {
+            s2: di::Ref<Service2>,
+            s1: di::Ref<Service1>,
+            s3: di::Ref<Service3>,
+            s4: di::Ref<Service4>
+            s4: di::Ref<Service5>| {
                 options.property = do_something_with(s1, s2, s3, s4, s5);
             });
 ```
-- Implement the [ConfigureOptions] trait and register it as a service
+- Implement the [Configure] trait and register it as a service
 
 It is recommended to pass a configuration closure to one of the `configure` functions since creating a struct is more
 complex. Creating a struct is equivalent to what the framework does when calling any of the `configure` functions.
-Calling one of the `configure` functions registers a transient [ConfigureOptions], which initializes with the specified
+Calling one of the `configure` functions registers a transient [Configure], which initializes with the specified
 service types.
 
 | Function     | Description                                       |
@@ -90,8 +89,7 @@ service types.
 
 ## Options Post-Configuration
 
-Set post-configuration with [PostConfigureOptions]. Post-configuration runs after all [ConfigureOptions] configuration
-occurs.
+Set post-configuration with [PostConfigure]. Post-configuration runs after all [Configure] operations occur.
 
 Services can be accessed from dependency injection while configuring options in two ways:
 
@@ -103,20 +101,20 @@ services.post_configure_options::<MyAltOptions>(|options| options.count = 1);
 services.add_named_options::<MyOtherOptions>("name")
         .post_configure5(
             |options,
-            s2: Rc<Service2>,
-            s1: Rc<Service1>,
-            s3: Rc<Service3>,
-            s4: Rc<Service4>
-            s4: Rc<Service5>| {
+            s2: di::Ref<Service2>,
+            s1: di::Ref<Service1>,
+            s3: di::Ref<Service3>,
+            s4: di::Ref<Service4>
+            s4: di::Ref<Service5>| {
                 options.property = do_something_with(s1, s2, s3, s4, s5);
             });
 ```
-- Implement the [PostConfigureOptions] trait and register it as a service
+- Implement the [PostConfigure] trait and register it as a service
 
 `post_configure_options` applies to all instances. To apply a named configuration use `post_configure_named_options`. It
 is recommended to pass a configuration closure to one of the `post_configure` functions since creating a struct is more
 complex. Creating a struct is equivalent to what the framework does when calling any of the `post_configure` functions.
-Calling one of the `post_configure` functions registers a transient [PostConfigureOptions], which initializes with the
+Calling one of the `post_configure` functions registers a transient [PostConfigure], which initializes with the
 specified service types.
 
 | Function          | Description                                            |
@@ -130,8 +128,7 @@ specified service types.
 
 ## Options Validation
 
-Validation is performed with [ValidateOptions]. Validation runs after all [ConfigureOptions] and [PostConfigureOptions]
-occurs.
+Validation is performed with [Validate]. Validation runs after all [Configure] and [PostConfigure] operations occur.
 
 Services can be accessed from dependency injection while validating options in two ways:
 
@@ -144,17 +141,17 @@ services.add_named_options::<MyOtherOptions>("name")
         .configure(|options| options.count = 1)
         .validate5(
             |options,
-            s2: Rc<Service2>,
-            s1: Rc<Service1>,
-            s3: Rc<Service3>,
-            s4: Rc<Service4>
-            s4: Rc<Service5>| do_complex_validation(s1, s2, s3, s4, s5));
+            s2: di::Ref<Service2>,
+            s1: di::Ref<Service1>,
+            s3: di::Ref<Service3>,
+            s4: di::Ref<Service4>
+            s4: di::Ref<Service5>| do_complex_validation(s1, s2, s3, s4, s5));
 ```
-- Implement the [ValidateOptions] trait and register it as a service
+- Implement the [Validate] trait and register it as a service
 
 It is recommended to pass a validation closure to one of the `validate` functions since creating a struct is more
 complex. Creating a struct is equivalent to what the framework does when calling any of the `validate` functions.
-Calling one of the `validate` functions registers a transient [ValidateOptions], which initializes with the specified
+Calling one of the `validate` functions registers a transient [Validate], which initializes with the specified
 service types.
 
 | Function    | Description                                      |

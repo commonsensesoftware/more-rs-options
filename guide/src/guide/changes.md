@@ -7,35 +7,35 @@ when that may happen, such as an underlying configuration file has changed. The 
 or what has changed, only that a change has occurred. In response to the change, the corresponding options will be
 updated.
 
-## Snapshot
+## Options Snapshot
 
-When using [OptionsSnapshot]:
+When using an options [Snapshot]:
 
 - options are computed once per request when accessed and cached for the lifetime of the request.
 - may incur a significant performance penalty because it's a [Scoped] service and is recomputed per request.
 - changes to the configuration are read after the application starts when using configuration providers that support reading updated configuration values.
 
-The following code uses [OptionsSnapshot]:
+The following code uses an options [Snapshot]:
 
 ```rust
 use crate::MyOptions;
 use config::prelude::*;
 use di::{injectable, ServiceCollection};
-use options::{prelude::*, OptionsSnapshot, Ref};
+use options::{prelude::*, Snapshot, Ref};
 use std::error::Error;
 
 pub TestSnapModel {
-    snapshot: Ref<dyn OptionsSnapshot<MyOptions>>
+    snapshot: Ref<dyn Snapshot<MyOptions>>
 }
 
 #[injectable]
 impl TestSnapModel {
-    pub new(snapshot: Ref<dyn OptionsSnapshot<MyOptions>>) -> Self {
+    pub new(snapshot: Ref<dyn Snapshot<MyOptions>>) -> Self {
         Self { snapshot }
     }
 
     pub get(&self) -> String {
-        let options = self.snapshot.get(None);
+        let options = self.snapshot.get_unchecked();
         format!("Option1: {}\nOption2: {}", options.option1, options.option2)
     }
 }
@@ -57,10 +57,10 @@ fn main() -> Result<(), Box<dyn Error + 'static>> {
 
 Monitored options will reflect the current setting values whenever an underlying source changes.
 
-The difference between [OptionsMonitor] and [OptionsSnapshot] is that:
+The difference between an options [Monitor] and [Snapshot] are that:
 
-- [OptionsMonitor] is a [Singleton] service that retrieves current option values at any time, which is especially useful in singleton dependencies.
-- [OptionsSnapshot] is a [Scoped] service and provides a snapshot of the options at the time the [OptionsSnapshot] struct is constructed. Options snapshots are designed for use with [Transient] and [Scoped] dependencies.
+- [Monitor] is a [Singleton] service that retrieves current option values at any time, which is especially useful in singleton dependencies.
+- [Snapshot] is a [Scoped] service and provides a snapshot of the options at the time the [Snapshot] is constructed. Options snapshots are designed for use with [Transient] and [Scoped] dependencies.
 
 The following code registers a configuration instance which `MyOptions` binds against:
 
@@ -68,22 +68,22 @@ The following code registers a configuration instance which `MyOptions` binds ag
 use crate::MyOptions;
 use config::{prelude::*, ReloadableConfiguration};
 use di::{injectable, ServiceCollection};
-use options::{prelude::*, OptionsMonitor, Ref};
+use options::{prelude::*, Monitor, Ref};
 use std::convert::TryInto;
 use std::error::Error;
 
 pub TestMonitorModel {
-    monitor: Ref<dyn OptionsMonitor<MyOptions>>
+    monitor: Ref<dyn Monitor<MyOptions>>
 }
 
 #[injectable]
 impl TestMonitorModel {
-    pub new(monitor: Ref<dyn OptionsMonitor<MyOptions>>) -> Self {
+    pub new(monitor: Ref<dyn Monitor<MyOptions>>) -> Self {
         Self { monitor }
     }
 
     pub get(&self) -> String {
-        let options = self.monitor.get(None);
+        let options = self.monitor.get_unchecked();
         format!("Option1: {}\nOption2: {}", options.option1, options.option2)
     }
 }
