@@ -242,7 +242,7 @@ macro_rules! opts_ext_impl {
                 T: Value + Default + 'static,
                 F: Fn(&mut T) + $($bounds)+,
             {
-                self.add_named_options(name).configure(setup).into()
+                self.add_named_options(name).post_configure(setup).into()
             }
         }
     };
