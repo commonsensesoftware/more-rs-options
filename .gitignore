@@ -11,3 +11,6 @@ Cargo.lock
 
 # Generated book output
 guide/book
+
+# Local cargo config (path overrides for development)
+.cargo/config.toml
