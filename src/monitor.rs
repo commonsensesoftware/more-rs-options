@@ -34,7 +34,6 @@ impl<T: Value> Subscription<T> {
 #[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
 pub trait Monitor<T: Value> {
     /// Gets the default, unnamed configuration options.
-    #[must_use]
     fn get(&self) -> Result<Ref<T>, Error> {
         self.get_named("")
     }
@@ -56,7 +55,6 @@ pub trait Monitor<T: Value> {
     /// # Arguments
     ///
     /// * `name` - The name associated with the options.
-    #[must_use]
     fn get_named(&self, name: &str) -> Result<Ref<T>, Error>;
 
     /// Gets the configuration options with the given name.
