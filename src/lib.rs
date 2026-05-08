@@ -38,7 +38,9 @@ mod monitor;
 mod option;
 mod snapshot;
 mod token;
-mod validate;
+
+/// Provides options validation.
+pub mod validation;
 
 /// Contains the library prelude.
 #[cfg(any(feature = "di", feature = "cfg"))]
