@@ -1,19 +1,19 @@
-use crate::{Options, OptionsCache, OptionsFactory, OptionsMonitorCache, OptionsSnapshot, Ref, Value};
+use crate::{Cache, Factory, MonitorCache, Ref, Snapshot, Value, validation::Error};
 
 /// Represents an object that manages [options](Options) and [option snapshots](OptionsSnapshot).
-pub struct OptionsManager<T: Value> {
-    factory: Ref<dyn OptionsFactory<T>>,
-    cache: OptionsCache<T>,
+pub struct Manager<T: Value> {
+    factory: Ref<dyn Factory<T>>,
+    cache: Cache<T>,
 }
 
-impl<T: Value> OptionsManager<T> {
+impl<T: Value> Manager<T> {
     /// Initializes a new options manager.
     ///
     /// # Arguments
     ///
     /// * `factory` - The [factory](OptionsFactory) used to create new options
     #[inline]
-    pub fn new(factory: Ref<dyn OptionsFactory<T>>) -> Self {
+    pub fn new(factory: Ref<dyn Factory<T>>) -> Self {
         Self {
             factory,
             cache: Default::default(),
@@ -21,18 +21,8 @@ impl<T: Value> OptionsManager<T> {
     }
 }
 
-impl<T: Value> Options<T> for OptionsManager<T> {
-    #[inline]
-    fn value(&self) -> Ref<T> {
-        self.get(None)
-    }
-}
-
-impl<T: Value> OptionsSnapshot<T> for OptionsManager<T> {
-    fn get(&self, name: Option<&str>) -> Ref<T> {
-        self.cache.get_or_add(name, &|n| match self.factory.create(n) {
-            Ok(options) => options,
-            Err(error) => panic!("{}", error),
-        })
+impl<T: Value> Snapshot<T> for Manager<T> {
+    fn get_named(&self, name: &str) -> Result<Ref<T>, Error> {
+        self.cache.get_or_add(name, &|n| self.factory.create(n))
     }
 }

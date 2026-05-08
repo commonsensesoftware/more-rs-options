@@ -1,36 +1,39 @@
-use crate::{ConfigureOptions, PostConfigureOptions, Ref, ValidateOptions, ValidateOptionsResult, Value};
+use crate::{
+    validation::{Error, Validate},
+    Configure, PostConfigure, Ref, Value,
+};
 
-/// Defines the behavior of an object that creates configuration [options](crate::Options).
+/// Defines the behavior of a configuration options factory.
 #[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
-pub trait OptionsFactory<T: Value> {
+pub trait Factory<T: Value> {
     /// Creates and returns new configuration options.
     ///
     /// # Arguments
     ///
     /// * `name` - The optional name of the configuration options to create
-    fn create(&self, name: Option<&str>) -> Result<T, ValidateOptionsResult>;
+    fn create(&self, name: &str) -> Result<T, Error>;
 }
 
-/// Represents the default factory used to create configuration [options](crate::Options).
+/// Represents the default factory used to create configuration options.
 #[derive(Default)]
-pub struct DefaultOptionsFactory<T: Value + Default> {
-    configurations: Vec<Ref<dyn ConfigureOptions<T>>>,
-    post_configurations: Vec<Ref<dyn PostConfigureOptions<T>>>,
-    validations: Vec<Ref<dyn ValidateOptions<T>>>,
+pub struct DefaultFactory<T: Value + Default> {
+    configurations: Vec<Ref<dyn Configure<T>>>,
+    post_configurations: Vec<Ref<dyn PostConfigure<T>>>,
+    validations: Vec<Ref<dyn Validate<T>>>,
 }
 
-impl<T: Value + Default> DefaultOptionsFactory<T> {
+impl<T: Value + Default> DefaultFactory<T> {
     /// Initializes a new options factory.
     ///
     /// # Arguments
     ///
-    /// * `configurations` - The configurations used to [configure options](ConfigureOptions)
-    /// * `post_configurations` - The configurations used to [post-configure options](PostConfigureOptions)
-    /// * `validations` - The validations used to [validate options](ValidateOptions)
+    /// * `configurations` - The configurations used to [configure options](Configure)
+    /// * `post_configurations` - The configurations used to [post-configure options](PostConfigure)
+    /// * `validations` - The validations used to [validate options](Validate)
     pub fn new(
-        configurations: Vec<Ref<dyn ConfigureOptions<T>>>,
-        post_configurations: Vec<Ref<dyn PostConfigureOptions<T>>>,
-        validations: Vec<Ref<dyn ValidateOptions<T>>>,
+        configurations: Vec<Ref<dyn Configure<T>>>,
+        post_configurations: Vec<Ref<dyn PostConfigure<T>>>,
+        validations: Vec<Ref<dyn Validate<T>>>,
     ) -> Self {
         Self {
             configurations,
@@ -40,34 +43,30 @@ impl<T: Value + Default> DefaultOptionsFactory<T> {
     }
 }
 
-impl<T: Value + Default> OptionsFactory<T> for DefaultOptionsFactory<T> {
-    fn create(&self, name: Option<&str>) -> Result<T, ValidateOptionsResult> {
+impl<T: Value + Default> Factory<T> for DefaultFactory<T> {
+    fn create(&self, name: &str) -> Result<T, Error> {
         let mut options = Default::default();
 
         for configuration in &self.configurations {
-            configuration.configure(name, &mut options);
+            configuration.run(name, &mut options);
         }
 
         for configuration in &self.post_configurations {
-            configuration.post_configure(name, &mut options);
+            configuration.run(name, &mut options);
         }
 
-        if !self.validations.is_empty() {
-            let mut failures = Vec::new();
+        let mut failures = Vec::new();
 
-            for validation in &self.validations {
-                let result = validation.validate(name, &options);
-
-                if result.failed() {
-                    failures.extend_from_slice(result.failures())
-                }
-            }
-
-            if !failures.is_empty() {
-                return Err(ValidateOptionsResult::fail_many(failures.iter()));
+        for validation in &self.validations {
+            if let Err(error) = validation.run(name, &options) {
+                failures.extend_from_slice(error.failures());
             }
         }
 
-        Ok(options)
+        if failures.is_empty() {
+            Ok(options)
+        } else {
+            Err(Error::many(failures))
+        }
     }
 }

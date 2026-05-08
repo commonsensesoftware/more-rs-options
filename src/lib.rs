@@ -35,7 +35,6 @@ mod configure;
 mod factory;
 mod manager;
 mod monitor;
-mod option;
 mod snapshot;
 mod token;
 
@@ -46,12 +45,10 @@ pub mod validation;
 #[cfg(any(feature = "di", feature = "cfg"))]
 pub mod prelude;
 
-pub use cache::*;
-pub use configure::*;
-pub use factory::*;
-pub use manager::*;
-pub use monitor::*;
-pub use option::*;
-pub use snapshot::*;
-pub use token::*;
-pub use validate::*;
+pub use cache::{Cache, MonitorCache};
+pub use configure::{Configure, PostConfigure};
+pub use factory::{DefaultFactory, Factory};
+pub use manager::Manager;
+pub use monitor::{DefaultMonitor, Monitor, Subscription};
+pub use snapshot::Snapshot;
+pub use token::ChangeTokenSource;
