@@ -2,12 +2,16 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 /// Represents the type alias for an options reference.
-#[cfg(not(all(feature = "di", feature = "async")))]
+#[cfg(not(any(feature = "di", feature = "async")))]
 pub type Ref<T> = std::rc::Rc<T>;
 
 /// Represents the type alias for an options reference.
 #[cfg(all(not(feature = "di"), feature = "async"))]
 pub type Ref<T> = std::sync::Arc<T>;
+
+/// Represents the type alias for an options reference.
+#[cfg(all(feature = "di", not(feature = "async")))]
+pub type Ref<T> = di::Ref<T>;
 
 /// Represents the type alias for an options reference.
 #[cfg(all(feature = "di", feature = "async"))]

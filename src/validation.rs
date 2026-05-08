@@ -18,7 +18,7 @@ pub fn success() -> Result {
 /// Indicates validation was skipped.
 #[inline]
 pub fn skip() -> Result {
-    Ok(Outcome::Succeeded)
+    Ok(Outcome::Skipped)
 }
 
 /// Indicates validation failed.
