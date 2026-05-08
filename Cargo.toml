@@ -1,8 +1,8 @@
 [package]
 name = "more-options"
 version = "4.0.0"
-edition = "2018"
-rust-version = "1.60"
+edition = "2021"
+rust-version = "1.79"
 authors = ["Chris Martinez <chris.s.martinez@hotmail.com>"]
 description = "Provides support for options"
 keywords = ["more", "options"]
@@ -28,7 +28,7 @@ async = ["more-di?/async", "dep:maybe-impl"]
 
 [workspace.dependencies]
 serde = "1.0"
-more-config = { version = "3.0.0", path = "C:\\dev\\rust\\more-rs-config" }
+more-config = { version = "3.0.0", default-features = false, path = "C:\\dev\\rust\\more-rs-config" }
 
 [dependencies]
 arc-swap = "1.9.1"
@@ -39,13 +39,10 @@ serde = { workspace = true, optional = true }
 
 [dependencies.more-di]
 version = "3.2.0"
-default-features = false
-features = ["builder"]
 optional = true
 
 [dependencies.more-config]
 workspace = true
-default-features = false
 features = ["binder"]
 optional = true
 
