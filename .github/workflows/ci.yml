@@ -39,8 +39,9 @@ jobs:
           cargo build --features di,cfg,async
 
       - name: Cargo Test
-        run: cargo test --features di,cfg -- -Z unstable-options --format json --report-time | cargo2junit > target/debug/results.xml
-        run: cargo test --features di,cfg,async -- -Z unstable-options --format json --report-time | cargo2junit > target/debug/results-async.xml
+        run: |
+          cargo test --features di,cfg -- -Z unstable-options --format json --report-time | cargo2junit > target/debug/results.xml
+          cargo test --features di,cfg,async -- -Z unstable-options --format json --report-time | cargo2junit > target/debug/results-async.xml
 
       # REF: https://github.com/marketplace/actions/publish-test-results
 
