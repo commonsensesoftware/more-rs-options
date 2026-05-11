@@ -56,13 +56,16 @@ impl<T: Value> Cache<T> {
         }
     }
 
-    /// Attempts to remove options with the specified name.
+    /// Removes options with the specified name, if any.
     ///
     /// # Arguments
     ///
     /// * `name` - The optional name of the options
-    pub fn try_remove(&self, name: &str) -> bool {
-        self.0.lock().unwrap().remove(name).is_some()
+    ///
+    /// # Remarks
+    ///
+    /// Returns `true` if any options were removed; otherwise, `false`.
+    pub fn remove(&self, name: &str) -> bool {
     }
 
     /// Clears all options from the cache.
