@@ -1,4 +1,4 @@
-use crate::{validation::Error, ChangeTokenSource, Factory, MonitorCache, Ref, Value};
+use crate::{validation::Error, Cache, ChangeTokenSource, Factory, Ref, Value};
 use cfg_if::cfg_if;
 use std::sync::{Arc, RwLock, Weak};
 
@@ -99,11 +99,11 @@ impl<T: Value + 'static> DefaultMonitor<T> {
     ///
     /// # Arguments
     ///
-    /// * `cache` - The [cache](crate::OptionsMonitorCache) used for monitored options
+    /// * `cache` - The [cache](crate::Cache) used for monitored options
     /// * `sources` - The [source tokens](crate::ChangeTokenSource) used to track option changes
     /// * `factory` - The [factory](crate::OptionsFactory) used to create new options
     pub fn new(
-        cache: Ref<dyn MonitorCache<T>>,
+        cache: Ref<Cache<T>>,
         sources: Vec<Ref<dyn ChangeTokenSource<T>>>,
         factory: Ref<dyn Factory<T>>,
     ) -> Self {
@@ -141,11 +141,11 @@ impl<T: Value + 'static> DefaultMonitor<T> {
     ///
     /// # Arguments
     ///
-    /// * `cache` - The [cache](crate::OptionsMonitorCache) used for monitored options
+    /// * `cache` - The [cache](crate::Cache) used for monitored options
     /// * `sources` - The [source tokens](crate::ChangeTokenSource) used to track option changes
     /// * `factory` - The [factory](crate::OptionsFactory) used to create new options
     pub fn new(
-        cache: Ref<dyn MonitorCache<T>>,
+        cache: Ref<Cache<T>>,
         sources: Vec<Ref<dyn ChangeTokenSource<T>>>,
         factory: Ref<dyn Factory<T>>,
     ) -> Self {
@@ -174,7 +174,7 @@ impl<T: Value> Monitor<T> for DefaultMonitor<T> {
 }
 
 struct ChangeTracker<T: Value> {
-    cache: Ref<dyn MonitorCache<T>>,
+    cache: Ref<Cache<T>>,
     factory: Ref<dyn Factory<T>>,
     listeners: RwLock<Vec<Weak<Callback<T>>>>,
 
@@ -236,7 +236,7 @@ impl<T: Value> ChangeTracker<T> {
 #[cfg(feature = "async")]
 impl<T: Value> ChangeTracker<T> {
     #[inline]
-    fn new(cache: Ref<dyn MonitorCache<T>>, factory: Ref<dyn Factory<T>>) -> Self {
+    fn new(cache: Ref<Cache<T>>, factory: Ref<dyn Factory<T>>) -> Self {
         Self {
             cache,
             factory,
@@ -248,7 +248,7 @@ impl<T: Value> ChangeTracker<T> {
 #[cfg(not(feature = "async"))]
 impl<T: Value> ChangeTracker<T> {
     fn new(
-        cache: Ref<dyn MonitorCache<T>>,
+        cache: Ref<Cache<T>>,
         sources: Vec<Ref<dyn ChangeTokenSource<T>>>,
         factory: Ref<dyn Factory<T>>,
     ) -> Self {

@@ -140,19 +140,19 @@ fn _add_options<'a, T: Value>(
         )
         .try_add(
             singleton::<dyn Monitor<T>, DefaultMonitor<T>>()
-                .depends_on(exactly_one::<dyn MonitorCache<T>>())
+                .depends_on(exactly_one::<Cache<T>>())
                 .depends_on(zero_or_more::<dyn ChangeTokenSource<T>>())
                 .depends_on(exactly_one::<dyn Factory<T>>())
                 .from(|sp| {
                     Ref::new(DefaultMonitor::new(
-                        sp.get_required::<dyn MonitorCache<T>>(),
+                        sp.get_required::<Cache<T>>(),
                         sp.get_all::<dyn ChangeTokenSource<T>>().collect(),
                         sp.get_required::<dyn Factory<T>>(),
                     ))
                 }),
         )
         .try_add(descriptor)
-        .try_add(singleton::<dyn MonitorCache<T>, Cache<T>>().from(|_| Ref::new(Cache::default())));
+        .try_add(singleton_as_self::<Cache<T>>().from(|_| Ref::new(Cache::new())));
 
     Builder::new(services, name)
 }

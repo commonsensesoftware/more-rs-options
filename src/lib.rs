@@ -49,7 +49,7 @@ pub mod validation;
 #[cfg(any(feature = "di", feature = "cfg"))]
 pub mod prelude;
 
-pub use cache::{Cache, MonitorCache};
+pub use cache::Cache;
 pub use configure::{Configure, PostConfigure};
 pub use factory::{DefaultFactory, Factory};
 pub use manager::Manager;
