@@ -1,5 +1,6 @@
 use std::error;
 use std::fmt::{Display, Formatter, Result};
+use tracing::debug;
 
 /// Represents the result of options validation.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -29,7 +30,14 @@ impl Error {
         I: IntoIterator<Item = S>,
     {
         Self {
-            failures: failures.into_iter().map(|f| f.as_ref().to_owned()).collect(),
+            failures: failures
+                .into_iter()
+                .map(|failure| {
+                    let failure = failure.as_ref().to_owned();
+                    debug!("{failure}");
+                    failure
+                })
+                .collect(),
         }
     }
 
