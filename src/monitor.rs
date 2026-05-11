@@ -247,11 +247,7 @@ impl<T: Value> ChangeTracker<T> {
 
 #[cfg(not(feature = "async"))]
 impl<T: Value> ChangeTracker<T> {
-    fn new(
-        cache: Ref<Cache<T>>,
-        sources: Vec<Ref<dyn ChangeTokenSource<T>>>,
-        factory: Ref<dyn Factory<T>>,
-    ) -> Self {
+    fn new(cache: Ref<Cache<T>>, sources: Vec<Ref<dyn ChangeTokenSource<T>>>, factory: Ref<dyn Factory<T>>) -> Self {
         let len = sources.len();
         let tokens = sources.iter().map(|s| s.token()).collect();
         Self {
