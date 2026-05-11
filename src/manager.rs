@@ -1,6 +1,6 @@
 use crate::{validation::Error, Cache, Factory, Ref, Snapshot, Value};
 
-/// Represents an object that manages [options](Options) and [option snapshots](OptionsSnapshot).
+/// Represents an object that manages options and [option snapshots](Snapshot).
 pub struct Manager<T: Value> {
     factory: Ref<dyn Factory<T>>,
     cache: Cache<T>,
@@ -11,7 +11,7 @@ impl<T: Value> Manager<T> {
     ///
     /// # Arguments
     ///
-    /// * `factory` - The [factory](OptionsFactory) used to create new options
+    /// * `factory` - The [factory](Factory) used to create new options
     #[inline]
     pub fn new(factory: Ref<dyn Factory<T>>) -> Self {
         Self {

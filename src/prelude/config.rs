@@ -54,7 +54,7 @@ pub trait ConfigExt<C>: Sized {
     ///
     /// # Arguments
     ///
-    /// * `configuration` - The [configuration](config::Configuration) applied to the options
+    /// * `configuration` - The [configuration](::config::Configuration) applied to the options
     fn apply_config<T>(&mut self, configuration: C) -> Builder<'_, T>
     where
         T: Value + Default + DeserializeOwned + Send + Sync + 'static;
@@ -63,8 +63,8 @@ pub trait ConfigExt<C>: Sized {
     ///
     /// # Arguments
     ///
-    /// * `configuration` - The [configuration](config::Configuration) applied to the options
-    /// * `key` - The key to the part of the [configuration](config::Configuration) applied to the options
+    /// * `configuration` - The [configuration](::config::Configuration) applied to the options
+    /// * `key` - The key to the part of the [configuration](::config::Configuration) applied to the options
     fn apply_config_at<T>(&mut self, configuration: C, key: impl AsRef<str>) -> Builder<'_, T>
     where
         T: Value + Default + DeserializeOwned + Send + Sync + 'static;

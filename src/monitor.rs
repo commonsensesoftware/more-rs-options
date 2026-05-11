@@ -101,7 +101,7 @@ impl<T: Value + 'static> DefaultMonitor<T> {
     ///
     /// * `cache` - The [cache](crate::Cache) used for monitored options
     /// * `sources` - The [source tokens](crate::ChangeTokenSource) used to track option changes
-    /// * `factory` - The [factory](crate::OptionsFactory) used to create new options
+    /// * `factory` - The [factory](crate::Factory) used to create new options
     pub fn new(
         cache: Ref<Cache<T>>,
         sources: Vec<Ref<dyn ChangeTokenSource<T>>>,
@@ -143,7 +143,7 @@ impl<T: Value + 'static> DefaultMonitor<T> {
     ///
     /// * `cache` - The [cache](crate::Cache) used for monitored options
     /// * `sources` - The [source tokens](crate::ChangeTokenSource) used to track option changes
-    /// * `factory` - The [factory](crate::OptionsFactory) used to create new options
+    /// * `factory` - The [factory](crate::Factory) used to create new options
     pub fn new(
         cache: Ref<Cache<T>>,
         sources: Vec<Ref<dyn ChangeTokenSource<T>>>,
