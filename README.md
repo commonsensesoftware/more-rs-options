@@ -144,6 +144,32 @@ fn main() -> Result<(), Box<dyn Error + 'static>> {
 }
 ```
 
+## Examples
+
+### Basic
+
+A basic demonstration application is provided that combines in-memory settings resolves them as a set of _options_.
+Run it with:
+
+```bash
+cargo run --example basic
+```
+
+### Dependency Injection
+
+A variant of the demonstration application is provided that illustrates how to provide composition, which removes the
+setup ceremony, using dependency injection (DI). Run it with:
+
+```bash
+cargo run --example di
+```
+
+## Minimum Supported Rust Version
+
+When increasing the minimum supported Rust version (MSRV), the new version must have been released at least six months
+ago. The current MSRV is 1.79.
+
+
 ## License
 
 This project is licensed under the [MIT license].
