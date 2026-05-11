@@ -1,4 +1,4 @@
-use crate::{validation::Error, Cache, ChangeTokenSource, Factory, Ref, Value};
+use crate::{validation::Error, Cache, ChangeTokenSource, DefaultFactory, Factory, Ref, Value};
 use cfg_if::cfg_if;
 use std::any::type_name;
 use std::sync::{Arc, RwLock, Weak};
@@ -320,6 +320,13 @@ cfg_if! {
                 self.0.deref()
             }
         }
+    }
+}
+
+impl<T: Value + Default + 'static> From<DefaultFactory<T>> for DefaultMonitor<T> {
+    #[inline]
+    fn from(factory: DefaultFactory<T>) -> Self {
+        Self::new(Default::default(), Default::default(), Ref::new(factory))
     }
 }
 
