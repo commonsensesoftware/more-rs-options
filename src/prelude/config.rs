@@ -229,6 +229,10 @@ mod tests {
         file.write_all(json.to_string().as_bytes()).unwrap();
         drop(file);
 
+        // give the file watcher time to detect the change;  on Linux CI (inotify), async notification delivery can be
+        // slower than on Windows (ReadDirectoryChangesW)
+        std::thread::sleep(Duration::from_millis(100));
+
         let (mutex, event) = &*state;
         let deadline = Instant::now();
 
