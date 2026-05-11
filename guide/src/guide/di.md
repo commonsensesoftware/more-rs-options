@@ -11,7 +11,7 @@ configuration:
 
 ```rust
 use config::prelude::*;
-use di::{injectable, ServiceCollection, Ref}
+use di::{injectable, Injectable, Ref, ServiceCollection};
 use options::prelude::*;
 use serde::Deserialize;
 use std::error::Error;
@@ -22,17 +22,17 @@ pub struct PositionOptions {
     pub name: String,
 }
 
-pub TestModel {
+pub struct TestModel {
     options: Ref<PositionOptions>
 }
 
 #[injectable]
 impl TestModel {
-    pub new(options: Ref<PositionOptions>) -> Self {
+    pub fn new(options: Ref<PositionOptions>) -> Self {
         Self { options }
     }
 
-    pub get(&self) -> String {
+    pub fn get(&self) -> String {
         format!("Title: {}\nName: {}", self.options.title, self.options.name)
     }
 }

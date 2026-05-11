@@ -20,21 +20,21 @@ The following code uses an options [Snapshot]:
 ```rust
 use crate::MyOptions;
 use config::prelude::*;
-use di::{injectable, ServiceCollection};
+use di::{injectable, Injectable, ServiceCollection};
 use options::{prelude::*, Snapshot, Ref};
 use std::error::Error;
 
-pub TestSnapModel {
+pub struct TestSnapModel {
     snapshot: Ref<dyn Snapshot<MyOptions>>
 }
 
 #[injectable]
 impl TestSnapModel {
-    pub new(snapshot: Ref<dyn Snapshot<MyOptions>>) -> Self {
+    pub fn new(snapshot: Ref<dyn Snapshot<MyOptions>>) -> Self {
         Self { snapshot }
     }
 
-    pub get(&self) -> String {
+    pub fn get(&self) -> String {
         let options = self.snapshot.get_unchecked();
         format!("Option1: {}\nOption2: {}", options.option1, options.option2)
     }
@@ -67,7 +67,7 @@ The following code registers a configuration instance which `MyOptions` binds ag
 ```rust
 use crate::MyOptions;
 use config::{prelude::*, ReloadableConfiguration};
-use di::{injectable, ServiceCollection};
+use di::{injectable, Injectable, ServiceCollection};
 use options::{prelude::*, Monitor, Ref};
 use std::convert::TryInto;
 use std::error::Error;
