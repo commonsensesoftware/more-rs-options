@@ -10,11 +10,7 @@ pub type Ref<T> = std::rc::Rc<T>;
 pub type Ref<T> = std::sync::Arc<T>;
 
 /// Represents the type alias for an options reference.
-#[cfg(all(feature = "di", not(feature = "async")))]
-pub type Ref<T> = di::Ref<T>;
-
-/// Represents the type alias for an options reference.
-#[cfg(all(feature = "di", feature = "async"))]
+#[cfg(feature = "di")]
 pub type Ref<T> = di::Ref<T>;
 
 // trait aliases are unstable so define a custom
