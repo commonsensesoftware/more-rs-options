@@ -1,4 +1,5 @@
 use crate::{validation::Error, Ref, Value};
+use tracing::error;
 
 /// Defines the behavior for a snapshot of configuration options.
 #[cfg_attr(feature = "async", maybe_impl::traits(Send, Sync))]
@@ -16,7 +17,10 @@ pub trait Snapshot<T: Value> {
     fn get_unchecked(&self) -> Ref<T> {
         match self.get_named("") {
             Ok(value) => value,
-            Err(error) => panic!("{}", error),
+            Err(error) => {
+                error!("{error:?}");
+                panic!("{}", error)
+            }
         }
     }
 
@@ -39,7 +43,10 @@ pub trait Snapshot<T: Value> {
     fn get_named_unchecked(&self, name: &str) -> Ref<T> {
         match self.get_named(name) {
             Ok(value) => value,
-            Err(error) => panic!("[{name}] {}", error),
+            Err(error) => {
+                error!("[{name}] {error:?}");
+                panic!("[{name}] {}", error)
+            }
         }
     }
 }

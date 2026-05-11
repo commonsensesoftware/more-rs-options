@@ -1,6 +1,8 @@
 use crate::{validation::Error, Cache, ChangeTokenSource, Factory, Ref, Value};
 use cfg_if::cfg_if;
+use std::any::type_name;
 use std::sync::{Arc, RwLock, Weak};
+use tracing::{error, trace};
 
 cfg_if! {
     if #[cfg(not(feature = "async"))] {
@@ -46,7 +48,10 @@ pub trait Monitor<T: Value> {
     fn get_unchecked(&self) -> Ref<T> {
         match self.get_named("") {
             Ok(value) => value,
-            Err(error) => panic!("{}", error),
+            Err(error) => {
+                error!("{error:?}");
+                panic!("{}", error)
+            }
         }
     }
 
@@ -69,7 +74,10 @@ pub trait Monitor<T: Value> {
     fn get_named_unchecked(&self, name: &str) -> Ref<T> {
         match self.get_named(name) {
             Ok(value) => value,
-            Err(error) => panic!("[{name}] {}", error),
+            Err(error) => {
+                error!("[{name}] {error:?}");
+                panic!("[{name}] {}", error)
+            }
         }
     }
 
@@ -117,9 +125,13 @@ impl<T: Value + 'static> DefaultMonitor<T> {
             let subscription: Box<dyn tokens::Subscription> = Box::new(tokens::on_change(
                 move || producer.token(),
                 move |state| {
+                    let kind = type_name::<T>().rsplit_once("::").unwrap().1;
+
                     if let Some(name) = state {
+                        trace!("{} ({name}) have changed", kind);
                         consumer.on_change(&name);
                     } else {
+                        trace!("{} options have changed", kind);
                         consumer.on_change("");
                     };
                 },
@@ -250,6 +262,7 @@ impl<T: Value> ChangeTracker<T> {
     fn new(cache: Ref<Cache<T>>, sources: Vec<Ref<dyn ChangeTokenSource<T>>>, factory: Ref<dyn Factory<T>>) -> Self {
         let len = sources.len();
         let tokens = sources.iter().map(|s| s.token()).collect();
+
         Self {
             cache,
             factory,
@@ -266,6 +279,15 @@ impl<T: Value> ChangeTracker<T> {
 
         for (i, source) in self.sources.iter().enumerate() {
             if tokens[i].changed() && !processed[i] {
+                let kind = type_name::<T>().rsplit_once("::").unwrap().1;
+                let name = source.name();
+
+                if name.is_empty() {
+                    trace!("{} have changed", kind);
+                } else {
+                    trace!("{} ({name}) have changed", kind);
+                }
+
                 self.on_change(source.name());
 
                 let new_token = source.token();
