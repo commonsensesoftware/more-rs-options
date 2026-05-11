@@ -1,4 +1,4 @@
-use crate::{validation::Error, Cache, Factory, MonitorCache, Ref, Snapshot, Value};
+use crate::{validation::Error, Cache, Factory, Ref, Snapshot, Value};
 
 /// Represents an object that manages [options](Options) and [option snapshots](OptionsSnapshot).
 pub struct Manager<T: Value> {
