@@ -11,7 +11,7 @@ readme = "README.md"
 homepage = "https://commonsensesoftware.github.io/more-rs-options/"
 repository = "https://github.com/commonsensesoftware/more-rs-options"
 
-# RUSTDOCFLAGS="--cfg docsrs"; cargo +nightly doc
+# RUSTDOCFLAGS="--cfg docsrs"; cargo +nightly doc --features di,cfg
 [package.metadata.docs.rs]
 features = ["di", "cfg"]
 rustdoc-args = ["--cfg", "docsrs"]
