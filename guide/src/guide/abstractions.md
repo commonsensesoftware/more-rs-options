@@ -56,7 +56,7 @@ pub trait Monitor<T> {
 ## Options Monitor Cache
 
 ```rust
-pub trait OptionsMonitorCache<T> {
+pub trait MonitorCache<T> {
     fn get_or_add(
         &self,
         name: &str,
