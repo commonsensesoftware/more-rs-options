@@ -223,7 +223,7 @@ impl<T: Value> ChangeTracker<T> {
             .filter_map(|c| c.upgrade())
             .collect();
 
-        self.cache.try_remove(name);
+        self.cache.remove(name);
 
         for callback in callbacks {
             if let Ok(options) = self.get(name) {
