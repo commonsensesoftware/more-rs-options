@@ -41,8 +41,8 @@ REF: https://github.com/tag1consulting/goose/issues/320
 [apply_config_at]: https://docs.rs/more-options/4.0.0/options/prelude/trait.ConfigExt.html#method.apply_config_at
 [add_options]: https://docs.rs/more-options/4.0.0/options/prelude/trait.OptionsExt.html#method.add_options
 
-[Binder::bind]: https://docs.rs/more-options/3.0.0/config/prelude/trait.Binder.html#method.bind
-[Binder::reify]: https://docs.rs/more-options/3.0.0/config/prelude/trait.Binder.html#method.reify
+[Binder::bind]: https://docs.rs/more-config/3.0.0/config/prelude/trait.Binder.html#method.bind
+[Binder::reify]: https://docs.rs/more-config/3.0.0/config/prelude/trait.Binder.html#method.reify
 
 [ServiceProvider::get_required]: https://docs.rs/more-di/3.2.0/di/struct.ServiceProvider.html#method.get_required
 [Singleton]: https://docs.rs/more-di/3.2.0/di/enum.ServiceLifetime.html#variant.Singleton

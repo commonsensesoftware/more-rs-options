@@ -39,6 +39,7 @@ The following code:
 
 ```rust
 use config::prelude::*;
+use serde::Deserialize;
 
 #[derive(Default, Deserialize)]
 pub struct PositionOptions {
